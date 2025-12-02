@@ -2,10 +2,12 @@
 
 namespace Rappasoft\LaravelAuthenticationLog\Listeners;
 
+use Exception;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Http\Request;
 use Rappasoft\LaravelAuthenticationLog\Notifications\FailedLogin;
 use Rappasoft\LaravelAuthenticationLog\Traits\AuthenticationLoggable;
+use UAParser\Parser;
 
 class FailedLoginListener
 {
@@ -37,7 +39,7 @@ class FailedLoginListener
 
             $log = $event->user->authentications()->create([
                 'ip_address' => $ip,
-                'user_agent' => $this->request->userAgent(),
+                'user_agent' => $this->parseUserAgent($this->request->userAgent()),
                 'login_at' => now(),
                 'login_successful' => false,
                 'location' => config('authentication-log.notifications.new-device.location') ? optional(geoip()->getLocation($ip))->toArray() : null,
@@ -47,6 +49,22 @@ class FailedLoginListener
                 $failedLogin = config('authentication-log.notifications.failed-login.template') ?? FailedLogin::class;
                 $event->user->notify(new $failedLogin($log));
             }
+        }
+    }
+
+    private function parseUserAgent(?string $userAgent): ?string
+    {
+        if (! $userAgent) {
+            return null;
+        }
+
+        try {
+            $parser = Parser::create();
+            $result = $parser->parse($userAgent);
+
+            return $result->toString() ?: $userAgent;
+        } catch (Exception) {
+            return $userAgent;
         }
     }
 }

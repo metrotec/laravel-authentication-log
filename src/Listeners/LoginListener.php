@@ -2,11 +2,13 @@
 
 namespace Rappasoft\LaravelAuthenticationLog\Listeners;
 
+use Exception;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Rappasoft\LaravelAuthenticationLog\Notifications\NewDevice;
 use Rappasoft\LaravelAuthenticationLog\Traits\AuthenticationLoggable;
+use UAParser\Parser;
 
 class LoginListener
 {
@@ -38,12 +40,13 @@ class LoginListener
 
             $user = $event->user;
             $userAgent = $this->request->userAgent();
-            $known = $user->authentications()->whereIpAddress($ip)->whereUserAgent($userAgent)->whereLoginSuccessful(true)->first();
+            $parsedUserAgent = $this->parseUserAgent($userAgent);
+            $known = $user->authentications()->whereIpAddress($ip)->whereUserAgent($parsedUserAgent)->whereLoginSuccessful(true)->first();
             $newUser = Carbon::parse($user->{$user->getCreatedAtColumn()})->diffInMinutes(Carbon::now()) < 1;
 
             $log = $user->authentications()->create([
                 'ip_address' => $ip,
-                'user_agent' => $userAgent,
+                'user_agent' => $parsedUserAgent,
                 'login_at' => now(),
                 'login_successful' => true,
                 'location' => config('authentication-log.notifications.new-device.location') ? optional(geoip()->getLocation($ip))->toArray() : null,
@@ -53,6 +56,22 @@ class LoginListener
                 $newDevice = config('authentication-log.notifications.new-device.template') ?? NewDevice::class;
                 $user->notify(new $newDevice($log));
             }
+        }
+    }
+
+    private function parseUserAgent(?string $userAgent): ?string
+    {
+        if (! $userAgent) {
+            return null;
+        }
+
+        try {
+            $parser = Parser::create();
+            $result = $parser->parse($userAgent);
+
+            return $result->toString() ?: $userAgent;
+        } catch (Exception) {
+            return $userAgent;
         }
     }
 }
