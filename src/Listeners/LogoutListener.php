@@ -6,9 +6,12 @@ use Illuminate\Auth\Events\Logout;
 use Illuminate\Http\Request;
 use Rappasoft\LaravelAuthenticationLog\Models\AuthenticationLog;
 use Rappasoft\LaravelAuthenticationLog\Traits\AuthenticationLoggable;
+use Rappasoft\LaravelAuthenticationLog\Traits\ParsesUserAgent;
 
 class LogoutListener
 {
+    use ParsesUserAgent;
+
     public Request $request;
 
     public function __construct(Request $request)
@@ -37,7 +40,7 @@ class LogoutListener
                 $ip = $this->request->ip();
             }
 
-            $userAgent = $this->request->userAgent();
+            $userAgent = $this->parseUserAgent($this->request->userAgent());
             $log = $user->authentications()->whereIpAddress($ip)->whereUserAgent($userAgent)->orderByDesc('login_at')->first();
 
             if (! $log) {

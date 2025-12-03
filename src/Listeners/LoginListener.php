@@ -2,16 +2,17 @@
 
 namespace Rappasoft\LaravelAuthenticationLog\Listeners;
 
-use Exception;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Rappasoft\LaravelAuthenticationLog\Notifications\NewDevice;
 use Rappasoft\LaravelAuthenticationLog\Traits\AuthenticationLoggable;
-use UAParser\Parser;
+use Rappasoft\LaravelAuthenticationLog\Traits\ParsesUserAgent;
 
 class LoginListener
 {
+    use ParsesUserAgent;
+
     public Request $request;
 
     public function __construct(Request $request)
@@ -56,22 +57,6 @@ class LoginListener
                 $newDevice = config('authentication-log.notifications.new-device.template') ?? NewDevice::class;
                 $user->notify(new $newDevice($log));
             }
-        }
-    }
-
-    private function parseUserAgent(?string $userAgent): ?string
-    {
-        if (! $userAgent) {
-            return null;
-        }
-
-        try {
-            $parser = Parser::create();
-            $result = $parser->parse($userAgent);
-
-            return $result->toString() ?: $userAgent;
-        } catch (Exception) {
-            return $userAgent;
         }
     }
 }

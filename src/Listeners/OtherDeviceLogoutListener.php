@@ -6,9 +6,12 @@ use Illuminate\Auth\Events\OtherDeviceLogout;
 use Illuminate\Http\Request;
 use Rappasoft\LaravelAuthenticationLog\Models\AuthenticationLog;
 use Rappasoft\LaravelAuthenticationLog\Traits\AuthenticationLoggable;
+use Rappasoft\LaravelAuthenticationLog\Traits\ParsesUserAgent;
 
 class OtherDeviceLogoutListener
 {
+    use ParsesUserAgent;
+
     public Request $request;
 
     public function __construct(Request $request)
@@ -37,7 +40,7 @@ class OtherDeviceLogoutListener
                 $ip = $this->request->ip();
             }
 
-            $userAgent = $this->request->userAgent();
+            $userAgent = $this->parseUserAgent($this->request->userAgent());
             $authenticationLog = $user->authentications()->whereIpAddress($ip)->whereUserAgent($userAgent)->first();
 
             if (! $authenticationLog) {
