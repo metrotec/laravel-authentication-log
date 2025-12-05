@@ -13,7 +13,7 @@ beforeEach(function () {
     $this->loadLaravelMigrations();
     $this->artisan('migrate', ['--database' => 'testing'])->run();
     Cache::flush();
-    
+
     // Reset Carbon time to ensure test isolation (prevents time mocking from leaking between tests)
     \Illuminate\Support\Carbon::setTestNow();
 });
