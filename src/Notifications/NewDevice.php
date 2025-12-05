@@ -5,8 +5,8 @@ namespace Rappasoft\LaravelAuthenticationLog\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Messages\VonageMessage;
 use Illuminate\Notifications\Messages\SlackMessage;
+use Illuminate\Notifications\Messages\VonageMessage;
 use Illuminate\Notifications\Notification;
 use Rappasoft\LaravelAuthenticationLog\Models\AuthenticationLog;
 

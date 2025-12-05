@@ -23,7 +23,7 @@ class LogoutListener
         if ($event->user instanceof Authenticatable) {
             /** @var Authenticatable&\Rappasoft\LaravelAuthenticationLog\Traits\AuthenticationLoggable $user */
             $user = $event->user;
-            
+
             if (! in_array(AuthenticationLoggable::class, class_uses_recursive(get_class($user)))) {
                 return;
             }
@@ -36,10 +36,10 @@ class LogoutListener
 
             $userAgent = $this->request->userAgent();
             $deviceId = DeviceFingerprint::generate($this->request);
-            
+
             // Try to find by device_id first (more reliable), then fall back to IP+UA
             $log = $user->authentications()->fromDevice($deviceId)->orderByDesc('login_at')->first();
-            
+
             if (! $log) {
                 $log = $user->authentications()->whereIpAddress($ip)->whereUserAgent($userAgent)->orderByDesc('login_at')->first();
             }

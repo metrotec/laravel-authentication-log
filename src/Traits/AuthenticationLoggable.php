@@ -107,7 +107,7 @@ trait AuthenticationLoggable
     public function revokeSession(int $sessionId): bool
     {
         $session = $this->authentications()->find($sessionId);
-        
+
         if (! $session || ! $session->isActive()) {
             return false;
         }
@@ -121,7 +121,7 @@ trait AuthenticationLoggable
     public function revokeAllOtherSessions(?string $currentDeviceId = null): int
     {
         $query = $this->authentications()->active();
-        
+
         if ($currentDeviceId) {
             $query->where('device_id', '!=', $currentDeviceId);
         }
@@ -185,13 +185,13 @@ trait AuthenticationLoggable
     public function detectSuspiciousActivity(): array
     {
         $suspicious = [];
-        
+
         // Check for multiple failed logins
         $recentFailed = $this->authentications()
             ->failed()
             ->recent(1)
             ->count();
-            
+
         if ($recentFailed >= config('authentication-log.suspicious.failed_login_threshold', 5)) {
             $suspicious[] = [
                 'type' => 'multiple_failed_logins',
@@ -206,7 +206,7 @@ trait AuthenticationLoggable
             ->recent(1)
             ->whereNotNull('location')
             ->get();
-            
+
         if ($recentLogins->count() >= 2) {
             $countries = $recentLogins->pluck('location.country')->filter()->unique();
             if ($countries->count() > 1) {
@@ -222,8 +222,8 @@ trait AuthenticationLoggable
         if (config('authentication-log.suspicious.check_unusual_times', false)) {
             $currentHour = now()->hour;
             $usualHours = config('authentication-log.suspicious.usual_hours', [9, 10, 11, 12, 13, 14, 15, 16, 17]);
-            
-            if (!in_array($currentHour, $usualHours)) {
+
+            if (! in_array($currentHour, $usualHours)) {
                 $suspicious[] = [
                     'type' => 'unusual_login_time',
                     'hour' => $currentHour,

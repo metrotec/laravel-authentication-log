@@ -25,7 +25,7 @@ class FailedLoginListener
         if ($event->user instanceof Authenticatable) {
             /** @var Authenticatable&\Rappasoft\LaravelAuthenticationLog\Traits\AuthenticationLoggable $user */
             $user = $event->user;
-            
+
             if (! in_array(AuthenticationLoggable::class, class_uses_recursive(get_class($user)))) {
                 return;
             }
@@ -73,7 +73,7 @@ class FailedLoginListener
 
             // Send webhook
             WebhookService::send('failed', $log, $user);
-            
+
             if ($log->is_suspicious) {
                 WebhookService::send('suspicious', $log, $user);
             }

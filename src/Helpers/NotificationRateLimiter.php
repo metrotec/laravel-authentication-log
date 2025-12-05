@@ -33,4 +33,3 @@ class NotificationRateLimiter
         return max(0, $maxAttempts - $attempts);
     }
 }
-

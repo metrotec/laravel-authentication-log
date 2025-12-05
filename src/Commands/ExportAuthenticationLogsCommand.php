@@ -3,7 +3,6 @@
 namespace Rappasoft\LaravelAuthenticationLog\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Storage;
 use Rappasoft\LaravelAuthenticationLog\Models\AuthenticationLog;
 
 class ExportAuthenticationLogsCommand extends Command
@@ -37,6 +36,7 @@ class ExportAuthenticationLogsCommand extends Command
 
         if ($logs->isEmpty()) {
             $this->warn('No logs found to export.');
+
             return self::FAILURE;
         }
 
@@ -128,4 +128,3 @@ class ExportAuthenticationLogsCommand extends Command
         file_put_contents($output, json_encode($data, JSON_PRETTY_PRINT));
     }
 }
-

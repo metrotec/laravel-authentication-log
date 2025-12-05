@@ -29,4 +29,3 @@ class RequireTrustedDevice
         return $next($request);
     }
 }
-
