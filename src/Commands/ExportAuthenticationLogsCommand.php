@@ -81,7 +81,7 @@ class ExportAuthenticationLogsCommand extends Command
                 $log->id,
                 $log->authenticatable_type,
                 $log->authenticatable_id,
-                $log->authenticatable->email ?? 'N/A',
+                $log->authenticatable?->email ?? 'N/A',
                 $log->ip_address,
                 $log->user_agent,
                 $log->device_id,
@@ -107,7 +107,7 @@ class ExportAuthenticationLogsCommand extends Command
                 'user' => [
                     'type' => $log->authenticatable_type,
                     'id' => $log->authenticatable_id,
-                    'email' => $log->authenticatable->email ?? null,
+                    'email' => $log->authenticatable?->email ?? null,
                 ],
                 'ip_address' => $log->ip_address,
                 'user_agent' => $log->user_agent,

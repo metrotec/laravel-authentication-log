@@ -144,13 +144,15 @@ trait AuthenticationLoggable
     public function getDevices(): \Illuminate\Database\Eloquent\Collection
     {
         // Get distinct devices by selecting the most recent entry for each device_id
+        $table = (new \Rappasoft\LaravelAuthenticationLog\Models\AuthenticationLog())->getTable();
+
         return $this->authentications()
             ->successful()
             ->select('device_id', 'device_name', 'ip_address', 'user_agent', 'is_trusted', 'login_at')
             ->whereNotNull('device_id')
-            ->whereIn('id', function ($query) {
+            ->whereIn('id', function ($query) use ($table) {
                 $query->selectRaw('MAX(id)')
-                    ->from('authentication_log')
+                    ->from($table)
                     ->where('authenticatable_type', get_class($this))
                     ->where('authenticatable_id', $this->id)
                     ->where('login_successful', true)
