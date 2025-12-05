@@ -17,7 +17,7 @@ beforeEach(function () {
 
 it('sends suspicious activity notification when enabled and multiple failed logins detected', function () {
     Notification::fake();
-    
+
     config([
         'authentication-log.notifications.suspicious-activity.enabled' => true,
         'authentication-log.suspicious.failed_login_threshold' => 3,
@@ -33,14 +33,14 @@ it('sends suspicious activity notification when enabled and multiple failed logi
     }
 
     Notification::assertSentTo($user, SuspiciousActivity::class, function ($notification) {
-        return !empty($notification->suspiciousActivities) &&
+        return ! empty($notification->suspiciousActivities) &&
                $notification->suspiciousActivities[0]['type'] === 'multiple_failed_logins';
     });
 });
 
 it('does not send suspicious activity notification when disabled', function () {
     Notification::fake();
-    
+
     config([
         'authentication-log.notifications.suspicious-activity.enabled' => false,
         'authentication-log.suspicious.failed_login_threshold' => 3,
@@ -60,7 +60,7 @@ it('does not send suspicious activity notification when disabled', function () {
 
 it('does not send notification when suspicious activity is not detected', function () {
     Notification::fake();
-    
+
     config([
         'authentication-log.notifications.suspicious-activity.enabled' => true,
         'authentication-log.suspicious.failed_login_threshold' => 5,
@@ -80,7 +80,7 @@ it('does not send notification when suspicious activity is not detected', functi
 
 it('sends notification for rapid location changes during login', function () {
     Notification::fake();
-    
+
     config([
         'authentication-log.notifications.suspicious-activity.enabled' => true,
         'authentication-log.notifications.new-device.location' => false, // Disable geoip to manually set location
@@ -122,14 +122,14 @@ it('sends notification for rapid location changes during login', function () {
     Event::dispatch(new Login('web', $user, false));
 
     Notification::assertSentTo($user, SuspiciousActivity::class, function ($notification) {
-        return !empty($notification->suspiciousActivities) &&
+        return ! empty($notification->suspiciousActivities) &&
                $notification->suspiciousActivities[0]['type'] === 'rapid_location_change';
     });
 });
 
 it('sends notification for unusual login times when enabled', function () {
     Notification::fake();
-    
+
     config([
         'authentication-log.notifications.suspicious-activity.enabled' => true,
         'authentication-log.suspicious.check_unusual_times' => true,
@@ -149,7 +149,7 @@ it('sends notification for unusual login times when enabled', function () {
     Event::dispatch(new Login('web', $user, false));
 
     Notification::assertSentTo($user, SuspiciousActivity::class, function ($notification) {
-        return !empty($notification->suspiciousActivities) &&
+        return ! empty($notification->suspiciousActivities) &&
                $notification->suspiciousActivities[0]['type'] === 'unusual_login_time';
     });
 
@@ -159,7 +159,7 @@ it('sends notification for unusual login times when enabled', function () {
 
 it('does not send notification for unusual login times when check is disabled', function () {
     Notification::fake();
-    
+
     config([
         'authentication-log.notifications.suspicious-activity.enabled' => true,
         'authentication-log.suspicious.check_unusual_times' => false,
@@ -186,7 +186,7 @@ it('does not send notification for unusual login times when check is disabled', 
 
 it('respects rate limiting for suspicious activity notifications', function () {
     Notification::fake();
-    
+
     config([
         'authentication-log.notifications.suspicious-activity.enabled' => true,
         'authentication-log.notifications.suspicious-activity.rate_limit' => 2,
@@ -228,7 +228,7 @@ it('respects rate limiting for suspicious activity notifications', function () {
 
 it('sends notification with correct suspicious activity details', function () {
     Notification::fake();
-    
+
     config([
         'authentication-log.notifications.suspicious-activity.enabled' => true,
         'authentication-log.suspicious.failed_login_threshold' => 3,
@@ -254,14 +254,14 @@ it('sends notification with correct suspicious activity details', function () {
         // We'll check that it's at least the threshold
         expect($notification->suspiciousActivities[0]['count'])->toBeGreaterThanOrEqual(3);
         expect($notification->suspiciousActivities[0]['message'])->toContain('failed login attempts');
-        
+
         return true;
     });
 });
 
 it('does not send notification for failed logins outside the time window', function () {
     Notification::fake();
-    
+
     config([
         'authentication-log.notifications.suspicious-activity.enabled' => true,
         'authentication-log.suspicious.failed_login_threshold' => 3,
@@ -287,7 +287,7 @@ it('does not send notification for failed logins outside the time window', funct
 
 it('sends notification only once per suspicious activity detection', function () {
     Notification::fake();
-    
+
     config([
         'authentication-log.notifications.suspicious-activity.enabled' => true,
         'authentication-log.suspicious.failed_login_threshold' => 3,
@@ -308,7 +308,7 @@ it('sends notification only once per suspicious activity detection', function ()
 
 it('does not send notification for rapid location change when locations are same country', function () {
     Notification::fake();
-    
+
     config([
         'authentication-log.notifications.suspicious-activity.enabled' => true,
         'authentication-log.notifications.new-device.enabled' => false, // Disable new device notifications
@@ -363,7 +363,7 @@ it('does not send notification for rapid location change when locations are same
 
 it('sends notification for multiple types of suspicious activity', function () {
     Notification::fake();
-    
+
     config([
         'authentication-log.notifications.suspicious-activity.enabled' => true,
         'authentication-log.suspicious.failed_login_threshold' => 3,
@@ -417,7 +417,7 @@ it('sends notification for multiple types of suspicious activity', function () {
 
     Notification::assertSentTo($user, SuspiciousActivity::class, function ($notification) {
         $types = collect($notification->suspiciousActivities)->pluck('type')->toArray();
-        
+
         // Should have multiple types of suspicious activity
         return count($types) > 1;
     });
