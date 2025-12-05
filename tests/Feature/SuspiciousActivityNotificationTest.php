@@ -13,6 +13,9 @@ beforeEach(function () {
     $this->loadLaravelMigrations();
     $this->artisan('migrate', ['--database' => 'testing'])->run();
     Cache::flush();
+    
+    // Reset Carbon time to ensure test isolation (prevents time mocking from leaking between tests)
+    \Illuminate\Support\Carbon::setTestNow();
 });
 
 it('sends suspicious activity notification when enabled and multiple failed logins detected', function () {
@@ -149,8 +152,12 @@ it('sends notification for unusual login times when enabled', function () {
         'authentication-log.suspicious.usual_hours' => [9, 10, 11, 12, 13, 14, 15, 16, 17],
     ]);
 
+    // Set current time to 3 AM (outside usual hours) FIRST, before creating user/logs
+    $testTime = \Illuminate\Support\Carbon::create(2024, 1, 1, 3, 0, 0);
+    \Illuminate\Support\Carbon::setTestNow($testTime);
+
     $user = TestUser::factory()->create([
-        'created_at' => now()->subMinutes(10),
+        'created_at' => $testTime->copy()->subMinutes(10),
     ]);
 
     // Set request values and generate device ID
@@ -160,20 +167,16 @@ it('sends notification for unusual login times when enabled', function () {
     request()->headers->set('User-Agent', $sameUserAgent);
     $deviceId = \Rappasoft\LaravelAuthenticationLog\Helpers\DeviceFingerprint::generate(request());
 
-    // Create a previous successful login so device is recognized as known
+    // Create a previous successful login so device is recognized as known (30 minutes before test time)
     AuthenticationLog::factory()->create([
         'authenticatable_type' => get_class($user),
         'authenticatable_id' => $user->id,
         'login_successful' => true,
-        'login_at' => now()->subMinutes(30),
+        'login_at' => $testTime->copy()->subMinutes(30),
         'ip_address' => $sameIp,
         'user_agent' => $sameUserAgent,
         'device_id' => $deviceId,
     ]);
-
-    // Set current time to 3 AM (outside usual hours)
-    $originalNow = now();
-    \Illuminate\Support\Carbon::setTestNow(now()->setHour(3)->setMinute(0));
 
     Event::dispatch(new Login('web', $user, false));
 
@@ -183,7 +186,7 @@ it('sends notification for unusual login times when enabled', function () {
     });
 
     // Reset time
-    \Illuminate\Support\Carbon::setTestNow($originalNow);
+    \Illuminate\Support\Carbon::setTestNow();
 });
 
 it('does not send notification for unusual login times when check is disabled', function () {
@@ -200,6 +203,10 @@ it('does not send notification for unusual login times when check is disabled', 
         'created_at' => now()->subMinutes(10),
     ]);
 
+    // Set current time to 3 AM (outside usual hours) FIRST, before creating logs
+    $testTime = \Illuminate\Support\Carbon::create(2024, 1, 1, 3, 0, 0);
+    \Illuminate\Support\Carbon::setTestNow($testTime);
+
     // Set request values and generate device ID
     $sameIp = '192.168.1.1';
     $sameUserAgent = 'Test Browser';
@@ -207,27 +214,23 @@ it('does not send notification for unusual login times when check is disabled', 
     request()->headers->set('User-Agent', $sameUserAgent);
     $deviceId = \Rappasoft\LaravelAuthenticationLog\Helpers\DeviceFingerprint::generate(request());
 
-    // Create a previous successful login so device is recognized as known
+    // Create a previous successful login so device is recognized as known (30 minutes before test time)
     AuthenticationLog::factory()->create([
         'authenticatable_type' => get_class($user),
         'authenticatable_id' => $user->id,
         'login_successful' => true,
-        'login_at' => now()->subMinutes(30),
+        'login_at' => $testTime->copy()->subMinutes(30),
         'ip_address' => $sameIp,
         'user_agent' => $sameUserAgent,
         'device_id' => $deviceId,
     ]);
-
-    // Set current time to 3 AM (outside usual hours)
-    $originalNow = now();
-    \Illuminate\Support\Carbon::setTestNow(now()->setHour(3)->setMinute(0));
 
     Event::dispatch(new Login('web', $user, false));
 
     Notification::assertNothingSent();
 
     // Reset time
-    \Illuminate\Support\Carbon::setTestNow($originalNow);
+    \Illuminate\Support\Carbon::setTestNow();
 });
 
 it('respects rate limiting for suspicious activity notifications', function () {
@@ -460,7 +463,6 @@ it('sends notification for multiple types of suspicious activity', function () {
     ]);
 
     // Set time to unusual hour
-    $originalNow = now();
     \Illuminate\Support\Carbon::setTestNow(now()->setHour(3)->setMinute(0));
 
     // Trigger login which should detect multiple suspicious activities
@@ -476,5 +478,5 @@ it('sends notification for multiple types of suspicious activity', function () {
     });
 
     // Reset time
-    \Illuminate\Support\Carbon::setTestNow($originalNow);
+    \Illuminate\Support\Carbon::setTestNow();
 });
