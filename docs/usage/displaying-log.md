@@ -3,7 +3,349 @@ title: Displaying the Log
 weight: 3
 ---
 
-You can set up your own views and paginate the logs using the user relationship as normal, or if you also use my [Livewire Tables](https://github.com/rappasoft/laravel-livewire-tables) plugin then here is an example table:
+You can set up your own views and paginate the logs using the user relationship as normal. Below are examples for different table implementations.
+
+## Filament Table
+
+If you're using [Filament](https://filamentphp.com), here's an example table component:
+
+**Note:** This example uses the `jenssegers/agent` package for parsing user agents. It's optional, modify the table to fit your needs.
+
+```php
+<?php
+
+namespace App\Filament\Resources;
+
+use App\Filament\Resources\AuthenticationLogResource\Pages;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Jenssegers\Agent\Agent;
+use Rappasoft\LaravelAuthenticationLog\Models\AuthenticationLog;
+
+class AuthenticationLogResource extends Resource
+{
+    protected static ?string $model = AuthenticationLog::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-shield-check';
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('ip_address')
+                    ->label('IP Address')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('user_agent')
+                    ->label('Browser')
+                    ->searchable()
+                    ->formatStateUsing(function ($state) {
+                        if (!$state) {
+                            return 'Unknown';
+                        }
+                        $agent = tap(new Agent, fn($agent) => $agent->setUserAgent($state));
+                        return $agent->platform() . ' - ' . $agent->browser();
+                    })
+                    ->wrap(),
+                Tables\Columns\TextColumn::make('location')
+                    ->label('Location')
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query
+                            ->where('location->city', 'like', "%{$search}%")
+                            ->orWhere('location->state', 'like', "%{$search}%")
+                            ->orWhere('location->state_name', 'like', "%{$search}%")
+                            ->orWhere('location->postal_code', 'like', "%{$search}%");
+                    })
+                    ->formatStateUsing(function ($state) {
+                        if (!$state || ($state['default'] ?? false)) {
+                            return '-';
+                        }
+                        return ($state['city'] ?? 'Unknown City') . ', ' . ($state['state'] ?? 'Unknown State');
+                    }),
+                Tables\Columns\TextColumn::make('device_name')
+                    ->label('Device')
+                    ->default('Unknown')
+                    ->searchable(),
+                Tables\Columns\IconColumn::make('login_successful')
+                    ->label('Status')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->trueColor('success')
+                    ->falseColor('danger')
+                    ->sortable(),
+                Tables\Columns\IconColumn::make('is_trusted')
+                    ->label('Trusted')
+                    ->boolean()
+                    ->sortable(),
+                Tables\Columns\IconColumn::make('is_suspicious')
+                    ->label('Suspicious')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-exclamation-triangle')
+                    ->trueColor('warning')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('login_at')
+                    ->label('Login At')
+                    ->dateTime()
+                    ->sortable()
+                    ->default('-'),
+                Tables\Columns\TextColumn::make('logout_at')
+                    ->label('Logout At')
+                    ->dateTime()
+                    ->sortable()
+                    ->default('-'),
+                Tables\Columns\TextColumn::make('last_activity_at')
+                    ->label('Last Activity')
+                    ->dateTime()
+                    ->sortable()
+                    ->default('-'),
+            ])
+            ->filters([
+                Tables\Filters\TernaryFilter::make('login_successful')
+                    ->label('Login Status')
+                    ->placeholder('All logins')
+                    ->trueLabel('Successful only')
+                    ->falseLabel('Failed only'),
+                Tables\Filters\TernaryFilter::make('is_trusted')
+                    ->label('Trusted Device')
+                    ->placeholder('All devices')
+                    ->trueLabel('Trusted only')
+                    ->falseLabel('Untrusted only'),
+                Tables\Filters\TernaryFilter::make('is_suspicious')
+                    ->label('Suspicious Activity')
+                    ->placeholder('All activities')
+                    ->trueLabel('Suspicious only')
+                    ->falseLabel('Normal only'),
+                Tables\Filters\Filter::make('active_sessions')
+                    ->label('Active Sessions')
+                    ->query(fn (Builder $query): Builder => $query
+                        ->where('login_successful', true)
+                        ->whereNull('logout_at')
+                    ),
+            ])
+            ->actions([
+                Tables\Actions\Action::make('view')
+                    ->label('View Details')
+                    ->icon('heroicon-o-eye')
+                    ->modalContent(function (AuthenticationLog $record) {
+                        return view('filament.resources.authentication-log.view', [
+                            'record' => $record,
+                        ]);
+                    })
+                    ->modalHeading('Authentication Log Details'),
+            ])
+            ->defaultSort('login_at', 'desc')
+            ->poll('30s'); // Optional: auto-refresh every 30 seconds
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->where('authenticatable_type', auth()->user()->getMorphClass())
+            ->where('authenticatable_id', auth()->id());
+    }
+}
+```
+
+For a standalone Filament table (not a resource), you can use:
+
+```php
+<?php
+
+namespace App\Filament\Pages;
+
+use Filament\Pages\Page;
+use Filament\Tables;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Jenssegers\Agent\Agent;
+use Rappasoft\LaravelAuthenticationLog\Models\AuthenticationLog;
+
+class AuthenticationLogs extends Page implements HasTable
+{
+    use InteractsWithTable;
+
+    protected static ?string $navigationIcon = 'heroicon-o-shield-check';
+    
+    protected static string $view = 'filament.pages.authentication-logs';
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->query(
+                AuthenticationLog::query()
+                    ->where('authenticatable_type', auth()->user()->getMorphClass())
+                    ->where('authenticatable_id', auth()->id())
+            )
+            ->columns([
+                // ... same columns as above
+            ])
+            ->filters([
+                // ... same filters as above
+            ])
+            ->defaultSort('login_at', 'desc');
+    }
+}
+```
+
+### Displaying Authentication Logs on User Resource Pages
+
+To show authentication logs as a relationship tab on your User resource page, create a RelationManager:
+
+```php
+<?php
+
+namespace App\Filament\Resources\UserResource\RelationManagers;
+
+use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Jenssegers\Agent\Agent;
+use Rappasoft\LaravelAuthenticationLog\Models\AuthenticationLog;
+
+class AuthenticationLogsRelationManager extends RelationManager
+{
+    protected static string $relationship = 'authentications';
+
+    protected static ?string $recordTitleAttribute = 'ip_address';
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('ip_address')
+                    ->label('IP Address')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('user_agent')
+                    ->label('Browser')
+                    ->searchable()
+                    ->formatStateUsing(function ($state) {
+                        if (!$state) {
+                            return 'Unknown';
+                        }
+                        $agent = tap(new Agent, fn($agent) => $agent->setUserAgent($state));
+                        return $agent->platform() . ' - ' . $agent->browser();
+                    })
+                    ->wrap(),
+                Tables\Columns\TextColumn::make('location')
+                    ->label('Location')
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query
+                            ->where('location->city', 'like', "%{$search}%")
+                            ->orWhere('location->state', 'like', "%{$search}%")
+                            ->orWhere('location->state_name', 'like', "%{$search}%")
+                            ->orWhere('location->postal_code', 'like', "%{$search}%");
+                    })
+                    ->formatStateUsing(function ($state) {
+                        if (!$state || ($state['default'] ?? false)) {
+                            return '-';
+                        }
+                        return ($state['city'] ?? 'Unknown City') . ', ' . ($state['state'] ?? 'Unknown State');
+                    }),
+                Tables\Columns\TextColumn::make('device_name')
+                    ->label('Device')
+                    ->default('Unknown')
+                    ->searchable(),
+                Tables\Columns\IconColumn::make('login_successful')
+                    ->label('Status')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->trueColor('success')
+                    ->falseColor('danger')
+                    ->sortable(),
+                Tables\Columns\IconColumn::make('is_trusted')
+                    ->label('Trusted')
+                    ->boolean()
+                    ->sortable(),
+                Tables\Columns\IconColumn::make('is_suspicious')
+                    ->label('Suspicious')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-exclamation-triangle')
+                    ->trueColor('warning')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('login_at')
+                    ->label('Login At')
+                    ->dateTime()
+                    ->sortable()
+                    ->default('-'),
+                Tables\Columns\TextColumn::make('logout_at')
+                    ->label('Logout At')
+                    ->dateTime()
+                    ->sortable()
+                    ->default('-'),
+                Tables\Columns\TextColumn::make('last_activity_at')
+                    ->label('Last Activity')
+                    ->dateTime()
+                    ->sortable()
+                    ->default('-'),
+            ])
+            ->filters([
+                Tables\Filters\TernaryFilter::make('login_successful')
+                    ->label('Login Status')
+                    ->placeholder('All logins')
+                    ->trueLabel('Successful only')
+                    ->falseLabel('Failed only'),
+                Tables\Filters\TernaryFilter::make('is_trusted')
+                    ->label('Trusted Device')
+                    ->placeholder('All devices')
+                    ->trueLabel('Trusted only')
+                    ->falseLabel('Untrusted only'),
+                Tables\Filters\TernaryFilter::make('is_suspicious')
+                    ->label('Suspicious Activity')
+                    ->placeholder('All activities')
+                    ->trueLabel('Suspicious only')
+                    ->falseLabel('Normal only'),
+                Tables\Filters\Filter::make('active_sessions')
+                    ->label('Active Sessions')
+                    ->query(fn (Builder $query): Builder => $query
+                        ->where('login_successful', true)
+                        ->whereNull('logout_at')
+                    ),
+            ])
+            ->defaultSort('login_at', 'desc')
+            ->poll('30s'); // Optional: auto-refresh every 30 seconds
+    }
+}
+```
+
+Then register it in your User resource:
+
+```php
+<?php
+
+namespace App\Filament\Resources;
+
+use App\Filament\Resources\UserResource\RelationManagers\AuthenticationLogsRelationManager;
+use Filament\Resources\Resource;
+use App\Models\User;
+
+class UserResource extends Resource
+{
+    protected static ?string $model = User::class;
+
+    // ... other resource configuration
+
+    public static function getRelations(): array
+    {
+        return [
+            AuthenticationLogsRelationManager::class,
+        ];
+    }
+}
+```
+
+The authentication logs will now appear as a tab on the User resource's view/edit pages, showing all authentication activity for that specific user.
+
+## Livewire Tables
+
+If you use my [Livewire Tables](https://github.com/rappasoft/laravel-livewire-tables) plugin, here is an example table:
 
 **Note:** This example uses the `jenssegers/agent` package which is included by default with Laravel Jetstream as well as `jamesmills/laravel-timezone` for displaying timezones in the users local timezone. Both are optional, modify the table to fit your needs.
 
