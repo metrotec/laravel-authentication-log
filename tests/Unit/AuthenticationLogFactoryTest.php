@@ -21,7 +21,7 @@ it('sets last_activity_at for successful login with null logout_at', function ()
     expect($log->login_successful)->toBeTrue();
     expect($log->logout_at)->toBeNull();
     expect($log->last_activity_at)->not->toBeNull();
-    
+
     // Test the actual fix: verify that the condition check works correctly
     // Create a log manually to simulate what the factory should do
     $log2 = new \Rappasoft\LaravelAuthenticationLog\Models\AuthenticationLog();
@@ -30,13 +30,13 @@ it('sets last_activity_at for successful login with null logout_at', function ()
     $log2->login_successful = true;
     $log2->login_at = now()->subDays(1);
     $log2->logout_at = null; // Explicitly null
-    
+
     // Simulate the factory closure logic: if login_successful && logout_at === null, set last_activity_at
     if ($log2->login_successful && ($log2->logout_at ?? null) === null) {
         $log2->last_activity_at = now();
     }
     $log2->save();
-    
+
     // Verify the logic worked
     expect($log2->last_activity_at)->not->toBeNull();
     expect($log2->logout_at)->toBeNull();
@@ -123,7 +123,7 @@ it('handles explicit null logout_at correctly', function () {
         'authenticatable_id' => $user->id,
         'login_successful' => true,
     ]);
-    
+
     // Set logout_at to null explicitly (simulating active session)
     $log->logout_at = null;
     $log->save();
@@ -142,7 +142,7 @@ it('factory default definition handles last_activity_at correctly', function () 
     $user = TestUser::factory()->create();
 
     // Test the fix logic directly: verify that the condition ($attributes['logout_at'] ?? null) === null works
-    
+
     // Test 1: Successful login with null logout_at should have last_activity_at
     // Simulate the factory closure logic
     $activeLog = new \Rappasoft\LaravelAuthenticationLog\Models\AuthenticationLog();
@@ -151,13 +151,13 @@ it('factory default definition handles last_activity_at correctly', function () 
     $activeLog->login_successful = true;
     $activeLog->login_at = now()->subDays(1);
     $activeLog->logout_at = null; // Explicitly null
-    
+
     // Apply the factory closure logic: if login_successful && logout_at === null, set last_activity_at
     if ($activeLog->login_successful && ($activeLog->logout_at ?? null) === null) {
         $activeLog->last_activity_at = now();
     }
     $activeLog->save();
-    
+
     expect($activeLog->last_activity_at)->not->toBeNull();
     expect($activeLog->logout_at)->toBeNull();
 
@@ -168,13 +168,13 @@ it('factory default definition handles last_activity_at correctly', function () 
     $loggedOutLog->login_successful = true;
     $loggedOutLog->login_at = now()->subDays(2);
     $loggedOutLog->logout_at = now()->subDays(1); // Explicitly set
-    
+
     // Apply the factory closure logic
     if ($loggedOutLog->login_successful && ($loggedOutLog->logout_at ?? null) === null) {
         $loggedOutLog->last_activity_at = now();
     }
     $loggedOutLog->save();
-    
+
     expect($loggedOutLog->last_activity_at)->toBeNull();
 
     // Test 3: Failed login should NOT have last_activity_at
@@ -182,17 +182,16 @@ it('factory default definition handles last_activity_at correctly', function () 
         'authenticatable_type' => get_class($user),
         'authenticatable_id' => $user->id,
     ]);
-    
+
     expect($failedLog->last_activity_at)->toBeNull();
     expect($failedLog->login_successful)->toBeFalse();
-    
+
     // Test 4: Verify the active() state works correctly (this uses the factory)
     $activeStateLog = AuthenticationLog::factory()->active()->create([
         'authenticatable_type' => get_class($user),
         'authenticatable_id' => $user->id,
     ]);
-    
+
     expect($activeStateLog->last_activity_at)->not->toBeNull();
     expect($activeStateLog->logout_at)->toBeNull();
 });
-

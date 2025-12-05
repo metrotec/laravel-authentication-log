@@ -105,7 +105,7 @@ it('getDevices returns distinct devices with latest information', function () {
 
     // Should return 2 distinct devices
     expect($devices->count())->toBe(2);
-    
+
     // Should have the latest device name for device-1
     $device1 = $devices->firstWhere('device_id', 'device-1');
     expect($device1->device_name)->toBe('New Name');
@@ -133,4 +133,3 @@ it('handles null device_ids correctly in distinct count', function () {
     // Should only count non-null device_ids
     expect($user->getUniqueDevicesCount())->toBe(1);
 });
-

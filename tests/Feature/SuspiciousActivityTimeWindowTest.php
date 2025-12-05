@@ -298,4 +298,3 @@ it('handles boundary condition at exactly 1 hour', function () {
     expect($suspicious)->not->toBeEmpty();
     expect($suspicious[0]['count'])->toBe(2); // Only 2 within the hour window
 });
-
