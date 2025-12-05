@@ -219,7 +219,7 @@ class AuthenticationLogsRelationManager extends RelationManager
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('device_name')
-                    ->label('Browser/Device')
+                    ->label('Device')
                     ->searchable()
                     ->default('Unknown Device'),
                 Tables\Columns\TextColumn::make('user_agent')
@@ -229,23 +229,28 @@ class AuthenticationLogsRelationManager extends RelationManager
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('location')
                     ->label('Location')
-                    ->searchable(query: function (Builder $query, string $search): Builder {
-                        return $query
-                            ->where('location->city', 'like', "%{$search}%")
-                            ->orWhere('location->state', 'like', "%{$search}%")
-                            ->orWhere('location->state_name', 'like', "%{$search}%")
-                            ->orWhere('location->postal_code', 'like', "%{$search}%");
-                    })
-                    ->formatStateUsing(function ($state) {
-                        if (!$state || ($state['default'] ?? false)) {
+                    ->getStateUsing(function ($record) {
+                        $location = $record->location;
+
+                        if (!$location || !is_array($location)) {
                             return '-';
                         }
-                        return ($state['city'] ?? 'Unknown City') . ', ' . ($state['state'] ?? 'Unknown State');
-                    }),
-                Tables\Columns\TextColumn::make('device_name')
-                    ->label('Device')
-                    ->default('Unknown')
-                    ->searchable(),
+
+                        // Don't show default/fallback locations
+                        if ($location['default'] ?? false) {
+                            return '-';
+                        }
+
+                        $city = $location['city'] ?? null;
+                        $state = $location['state'] ?? $location['state_name'] ?? null;
+
+                        if (!$city && !$state) {
+                            return '-';
+                        }
+
+                        return trim(($city ?? '') . ($city && $state ? ', ' : '') . ($state ?? '')) ?: '-';
+                    })
+                    ->searchable(false),
                 Tables\Columns\IconColumn::make('login_successful')
                     ->label('Status')
                     ->boolean()
@@ -268,17 +273,17 @@ class AuthenticationLogsRelationManager extends RelationManager
                     ->label('Login At')
                     ->dateTime()
                     ->sortable()
-                    ->default('-'),
+                    ->placeholder('-'),
                 Tables\Columns\TextColumn::make('logout_at')
                     ->label('Logout At')
                     ->dateTime()
                     ->sortable()
-                    ->default('-'),
+                    ->placeholder('-'),
                 Tables\Columns\TextColumn::make('last_activity_at')
                     ->label('Last Activity')
                     ->dateTime()
                     ->sortable()
-                    ->default('-'),
+                    ->placeholder('-'),
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('login_successful')
@@ -304,7 +309,6 @@ class AuthenticationLogsRelationManager extends RelationManager
                     ),
             ])
             ->defaultSort('login_at', 'desc');
-            // ->poll('30s'); // Optional: auto-refresh every 30 seconds
     }
 }
 ```
