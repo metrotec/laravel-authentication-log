@@ -20,7 +20,22 @@ class AuthenticationLogFactory extends Factory
             'login_at' => fake()->dateTimeBetween('-1 year', 'now'),
             'login_successful' => fake()->boolean(80),
             'logout_at' => fn (array $attributes) => $attributes['login_successful'] ? fake()->optional()->dateTimeBetween($attributes['login_at'], 'now') : null,
-            'last_activity_at' => fn (array $attributes) => $attributes['login_successful'] && !isset($attributes['logout_at']) ? fake()->optional()->dateTimeBetween($attributes['login_at'], 'now') : null,
+            'last_activity_at' => function (array $attributes) {
+                // Only set last_activity_at if login was successful AND logout_at is null/not set
+                // This fixes the bug where isset() was used instead of checking for null
+                if (! ($attributes['login_successful'] ?? false)) {
+                    return null;
+                }
+                
+                $logoutAt = $attributes['logout_at'] ?? null;
+                
+                // If logout_at is explicitly null or not set, this is an active session
+                if ($logoutAt === null) {
+                    return fake()->optional()->dateTimeBetween($attributes['login_at'] ?? '-1 month', 'now');
+                }
+                
+                return null;
+            },
             'cleared_by_user' => false,
             'location' => fake()->optional()->passthrough([
                 'default' => false,

@@ -49,10 +49,10 @@ class FailedLoginListener
                 'location' => config('authentication-log.notifications.failed-login.location') && function_exists('geoip') ? (geoip()->getLocation($ip)?->toArray()) : null,
             ]);
 
-            // Check for suspicious activity (multiple failed logins)
+            // Check for suspicious activity (multiple failed logins in the last hour)
             $recentFailed = $user->authentications()
                 ->failed()
-                ->recent(1)
+                ->where('login_at', '>=', now()->subHour())
                 ->count();
 
             if ($recentFailed >= config('authentication-log.suspicious.failed_login_threshold', 5)) {

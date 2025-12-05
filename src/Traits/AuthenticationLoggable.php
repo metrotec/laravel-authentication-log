@@ -59,8 +59,8 @@ trait AuthenticationLoggable
         return [
             'total_logins' => $this->authentications()->successful()->count(),
             'failed_attempts' => $this->authentications()->failed()->count(),
-            'unique_devices' => $this->authentications()->successful()->distinct('device_id')->count('device_id'),
-            'unique_ips' => $this->authentications()->successful()->distinct('ip_address')->count('ip_address'),
+            'unique_devices' => $this->authentications()->successful()->distinct()->count('device_id'),
+            'unique_ips' => $this->authentications()->successful()->distinct()->count('ip_address'),
             'last_30_days' => $this->authentications()->successful()->recent(30)->count(),
             'last_7_days' => $this->authentications()->successful()->recent(7)->count(),
             'suspicious_activities' => $this->authentications()->suspicious()->count(),
@@ -80,7 +80,7 @@ trait AuthenticationLoggable
 
     public function getUniqueDevicesCount(): int
     {
-        return $this->authentications()->successful()->distinct('device_id')->count('device_id');
+        return $this->authentications()->successful()->distinct()->count('device_id');
     }
 
     public function getSuspiciousActivitiesCount(): int
@@ -143,11 +143,20 @@ trait AuthenticationLoggable
     // Device Management Methods
     public function getDevices(): \Illuminate\Database\Eloquent\Collection
     {
+        // Get distinct devices by selecting the most recent entry for each device_id
         return $this->authentications()
             ->successful()
             ->select('device_id', 'device_name', 'ip_address', 'user_agent', 'is_trusted', 'login_at')
             ->whereNotNull('device_id')
-            ->distinct('device_id')
+            ->whereIn('id', function ($query) {
+                $query->selectRaw('MAX(id)')
+                    ->from('authentication_log')
+                    ->where('authenticatable_type', get_class($this))
+                    ->where('authenticatable_id', $this->id)
+                    ->where('login_successful', true)
+                    ->whereNotNull('device_id')
+                    ->groupBy('device_id');
+            })
             ->orderBy('login_at', 'desc')
             ->get();
     }
@@ -186,10 +195,10 @@ trait AuthenticationLoggable
     {
         $suspicious = [];
 
-        // Check for multiple failed logins
+        // Check for multiple failed logins (in the last hour)
         $recentFailed = $this->authentications()
             ->failed()
-            ->recent(1)
+            ->where('login_at', '>=', now()->subHour())
             ->count();
 
         if ($recentFailed >= config('authentication-log.suspicious.failed_login_threshold', 5)) {
@@ -200,10 +209,10 @@ trait AuthenticationLoggable
             ];
         }
 
-        // Check for rapid location changes
+        // Check for rapid location changes (in the last hour)
         $recentLogins = $this->authentications()
             ->successful()
-            ->recent(1)
+            ->where('login_at', '>=', now()->subHour())
             ->whereNotNull('location')
             ->get();
 
