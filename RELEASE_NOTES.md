@@ -1,12 +1,12 @@
-# Laravel Authentication Log v4.0.0 Release Notes
+# Laravel Authentication Log v6.0.0 Release Notes
 
-## 🎉 Major Release - Laravel 11 & 12 Support
+## 🎉 Major Release - Enhanced Features & Modernization
 
 This is a major release that modernizes the package for Laravel 11.x and 12.x, adds numerous new features, and fixes several long-standing issues.
 
 ## ⚠️ Breaking Changes
 
-- **Laravel 10.x support dropped**: This package now only supports Laravel 11.x and 12.x
+- **Laravel 10.x support dropped**: This package now only supports Laravel 11.x and 12.x (Laravel 12 support was added in v5.0.0)
 - **PHP 8.1+ required**: Minimum PHP version is now 8.1
 - **Database migration required**: Existing installations must run the upgrade migration to add new columns
 
@@ -183,6 +183,21 @@ Browser version updates (e.g., Safari 14.1.2 → 15.1) no longer trigger false "
 
 Session restorations (page refreshes, remember me cookies) no longer create duplicate log entries. The package now detects and handles session restorations automatically.
 
+### Fixed Issue #48, #87, #111 - SQL Server Duplicate ORDER BY Error
+**Fixes [#48](https://github.com/rappasoft/laravel-authentication-log/issues/48), [#87](https://github.com/rappasoft/laravel-authentication-log/issues/87), [#111](https://github.com/rappasoft/laravel-authentication-log/issues/111)**
+
+Fixed SQL Server error "A column has been specified more than once in the order by list" by removing duplicate `orderByDesc('login_at')` calls. The `authentications()` relationship already orders by `login_at DESC`, so additional ordering was unnecessary.
+
+### Fixed Issue #33, #58 - Model Exception for Models Without Trait
+**Fixes [#33](https://github.com/rappasoft/laravel-authentication-log/issues/33), [#58](https://github.com/rappasoft/laravel-authentication-log/issues/58)**
+
+All listeners now check if the authenticatable model implements the `AuthenticationLoggable` trait before processing, preventing `BadMethodCallException` errors when using multiple authenticatable models where only some have the trait.
+
+### Fixed Issue #82 - Duplicate Log Entries
+**Fixes [#82](https://github.com/rappasoft/laravel-authentication-log/issues/82)**
+
+Duplicate log entries issue resolved by session restoration prevention (same fix as Issue #13).
+
 ## ✅ Pull Requests Implemented
 
 ### PR #15 - Notification After Failed Login on New Device
@@ -277,7 +292,7 @@ php artisan vendor:publish --provider="Rappasoft\LaravelAuthenticationLog\Larave
 php artisan migrate
 ```
 
-### Upgrading from v3.x
+### Upgrading from v5.x or Earlier
 ```bash
 composer update rappasoft/laravel-authentication-log
 php artisan vendor:publish --provider="Rappasoft\LaravelAuthenticationLog\LaravelAuthenticationLogServiceProvider" --tag="authentication-log-migrations"
@@ -296,5 +311,5 @@ See the [documentation](https://rappasoft.com/docs/laravel-authentication-log) f
 
 ---
 
-**Note:** This release includes breaking changes. Please review the upgrade guide before upgrading from v3.x.
+**Note:** This release includes breaking changes. Please review the upgrade guide before upgrading from v5.x or earlier.
 

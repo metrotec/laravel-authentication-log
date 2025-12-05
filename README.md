@@ -3,16 +3,19 @@
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/rappasoft/laravel-authentication-log.svg?style=flat-square)](https://packagist.org/packages/rappasoft/laravel-authentication-log)
 [![Total Downloads](https://img.shields.io/packagist/dt/rappasoft/laravel-authentication-log.svg?style=flat-square)](https://packagist.org/packages/rappasoft/laravel-authentication-log)
 
-Laravel Authentication Log is a comprehensive package which tracks your user's authentication information such as login/logout time, IP, Browser, Location, Device Fingerprint, etc. It sends out notifications via mail, slack, or SMS for new devices and failed logins, detects suspicious activity, provides session management, and much more.
+Laravel Authentication Log is a comprehensive package which tracks your user's authentication information such as login/logout time, IP, Browser, Location, Device Fingerprint, etc. It sends out notifications via mail, slack, or SMS for new devices and failed logins, detects suspicious activity, provides session management, prevents duplicate log entries from session restorations, and much more.
+
+**Version 6.0.0** introduces major enhancements including session restoration prevention, improved device fingerprinting, enhanced statistics, and more. See the [Release Notes](RELEASE_NOTES.md) for complete details.
 
 ## Features
 
 ### Core Features
 - ✅ **Authentication Logging** - Tracks all login/logout attempts with IP, user agent, location, and timestamps
-- ✅ **Device Fingerprinting** - Reliable device identification using SHA-256 hashing
+- ✅ **Device Fingerprinting** - Reliable device identification using SHA-256 hashing with browser version normalization (prevents false positives)
 - ✅ **New Device Detection** - Automatically detects and notifies users of new device logins
 - ✅ **Failed Login Tracking** - Logs and optionally notifies users of failed login attempts
 - ✅ **Location Tracking** - Optional GeoIP integration for location data
+- ✅ **Session Restoration Prevention** - Automatically prevents duplicate log entries from page refreshes and remember me cookies
 
 ### Advanced Features
 - 🔒 **Suspicious Activity Detection** - Automatically detects multiple failed logins, rapid location changes, and unusual login times
@@ -36,10 +39,10 @@ See the [documentation](https://rappasoft.com/docs/laravel-authentication-log) f
  8.x      | 1.x               | Basic logging only
  9.x      | 2.x               | Basic logging only
  10.x     | 3.x               | Basic logging only
- 11.x     | 4.x               | All features (device fingerprinting, suspicious activity, webhooks, etc.)
- 12.x     | 4.x               | All features (device fingerprinting, suspicious activity, webhooks, etc.)
+ 11.x     | 5.x, 6.x          | All features (device fingerprinting, suspicious activity, webhooks, session management, etc.)
+ 12.x     | 5.x, 6.x          | All features (device fingerprinting, suspicious activity, webhooks, session management, etc.)
 
-**Note:** Version 4.x requires Laravel 11.x or 12.x. For Laravel 10.x support, please use version 3.x.
+**Note:** Version 6.x requires Laravel 11.x or 12.x and PHP 8.1+. Version 5.x also supports Laravel 11.x and 12.x. For Laravel 10.x support, please use version 3.x.
 
 ## Installation
 
@@ -68,19 +71,24 @@ php artisan vendor:publish --provider="Rappasoft\LaravelAuthenticationLog\Larave
 php artisan migrate
 ```
 
-**For existing installations (upgrading from v3.x or earlier):**
+**For existing installations (upgrading from v5.x or earlier):**
 ```bash
 # Update the package
 composer update rappasoft/laravel-authentication-log
 
-# Publish the upgrade migration
+# Publish the upgrade migration (if upgrading from v3.x or earlier)
 php artisan vendor:publish --provider="Rappasoft\LaravelAuthenticationLog\LaravelAuthenticationLogServiceProvider" --tag="authentication-log-migrations"
 
 # Run the migrations (the upgrade migration will only add columns if they don't exist)
 php artisan migrate
 ```
 
-The upgrade migration will safely add the new columns (`device_id`, `device_name`, `is_trusted`, `last_activity_at`, `is_suspicious`, `suspicious_reason`) to your existing `authentication_log` table without affecting existing data.
+**Important:** If upgrading from v3.x or earlier, the upgrade migration will safely add the new columns (`device_id`, `device_name`, `is_trusted`, `last_activity_at`, `is_suspicious`, `suspicious_reason`) to your existing `authentication_log` table without affecting existing data.
+
+**Breaking Changes in v6.0.0:**
+- Laravel 10.x support has been dropped (only Laravel 11.x and 12.x are supported)
+- PHP 8.1+ is now required
+- See the [Upgrade Guide](docs/start/upgrade.md) for detailed migration instructions
 
 ### 3. Configure (Optional)
 
@@ -200,8 +208,10 @@ $suspiciousActivities = $user->detectSuspiciousActivity();
 ### Middleware for Trusted Devices
 
 ```php
+use Rappasoft\LaravelAuthenticationLog\Middleware\RequireTrustedDevice;
+
 // In your routes file
-Route::middleware(['auth', 'device.trusted'])->group(function () {
+Route::middleware(['auth', RequireTrustedDevice::class])->group(function () {
     // These routes require a trusted device
     Route::get('/sensitive-action', [Controller::class, 'sensitiveAction']);
 });
@@ -213,14 +223,11 @@ Route::middleware(['auth', 'device.trusted'])->group(function () {
 # Export all logs to CSV
 php artisan authentication-log:export --format=csv
 
-# Export logs from last 30 days
-php artisan authentication-log:export --format=csv --days=30
+# Export to JSON
+php artisan authentication-log:export --format=json
 
-# Export logs for specific user
-php artisan authentication-log:export --format=json --user=1
-
-# Specify output file
-php artisan authentication-log:export --format=csv --output=logs.csv
+# Specify custom output path
+php artisan authentication-log:export --format=csv --path=storage/app/logs.csv
 ```
 
 ### Webhook Configuration
@@ -247,6 +254,8 @@ The package includes comprehensive configuration options:
 - **Suspicious Activity** - Configure thresholds and detection rules
 - **Webhooks** - Set up webhook endpoints for external integrations
 - **Database** - Customize table name and database connection
+- **Session Restoration** - Configure session restoration prevention (prevents duplicate log entries)
+- **New User Threshold** - Configure time window for new user detection
 
 See the [configuration documentation](https://rappasoft.com/docs/laravel-authentication-log/start/configuration) for all available options.
 

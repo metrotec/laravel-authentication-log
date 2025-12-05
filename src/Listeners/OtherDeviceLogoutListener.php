@@ -41,7 +41,8 @@ class OtherDeviceLogoutListener
             $authenticationLog = $user->authentications()->fromDevice($deviceId)->first();
             
             if (! $authenticationLog) {
-                $authenticationLog = $user->authentications()->whereIpAddress($ip)->whereUserAgent($userAgent)->first();
+                // Note: authentications() relationship already orders by login_at DESC
+                $authenticationLog = $user->authentications()->fromIp($ip)->where('user_agent', $userAgent)->first();
             }
 
             if (! $authenticationLog) {
@@ -53,7 +54,7 @@ class OtherDeviceLogoutListener
             }
 
             // Clear all other active sessions
-            foreach ($user->authentications()->whereLoginSuccessful(true)->whereNull('logout_at')->get() as $log) {
+            foreach ($user->authentications()->successful()->whereNull('logout_at')->get() as $log) {
                 if ($log->id !== $authenticationLog->id) {
                     $log->update([
                         'cleared_by_user' => true,

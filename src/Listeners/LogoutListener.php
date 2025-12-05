@@ -38,10 +38,11 @@ class LogoutListener
             $deviceId = DeviceFingerprint::generate($this->request);
             
             // Try to find by device_id first (more reliable), then fall back to IP+UA
-            $log = $user->authentications()->fromDevice($deviceId)->orderByDesc('login_at')->first();
+            // Note: authentications() relationship already orders by login_at DESC, so no need to add orderByDesc again
+            $log = $user->authentications()->fromDevice($deviceId)->first();
             
             if (! $log) {
-                $log = $user->authentications()->whereIpAddress($ip)->whereUserAgent($userAgent)->orderByDesc('login_at')->first();
+                $log = $user->authentications()->fromIp($ip)->where('user_agent', $userAgent)->first();
             }
 
             if (! $log) {
