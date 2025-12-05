@@ -144,6 +144,7 @@ it('sends notification for unusual login times when enabled', function () {
 
     config([
         'authentication-log.notifications.suspicious-activity.enabled' => true,
+        'authentication-log.notifications.new-device.enabled' => false, // Disable new device notifications
         'authentication-log.suspicious.check_unusual_times' => true,
         'authentication-log.suspicious.usual_hours' => [9, 10, 11, 12, 13, 14, 15, 16, 17],
     ]);
@@ -152,12 +153,28 @@ it('sends notification for unusual login times when enabled', function () {
         'created_at' => now()->subMinutes(10),
     ]);
 
+    // Set request values and generate device ID
+    $sameIp = '192.168.1.1';
+    $sameUserAgent = 'Test Browser';
+    request()->server->set('REMOTE_ADDR', $sameIp);
+    request()->headers->set('User-Agent', $sameUserAgent);
+    $deviceId = \Rappasoft\LaravelAuthenticationLog\Helpers\DeviceFingerprint::generate(request());
+
+    // Create a previous successful login so device is recognized as known
+    AuthenticationLog::factory()->create([
+        'authenticatable_type' => get_class($user),
+        'authenticatable_id' => $user->id,
+        'login_successful' => true,
+        'login_at' => now()->subMinutes(30),
+        'ip_address' => $sameIp,
+        'user_agent' => $sameUserAgent,
+        'device_id' => $deviceId,
+    ]);
+
     // Set current time to 3 AM (outside usual hours)
     $originalNow = now();
     \Illuminate\Support\Carbon::setTestNow(now()->setHour(3)->setMinute(0));
 
-    request()->server->set('REMOTE_ADDR', '192.168.1.1');
-    request()->headers->set('User-Agent', 'Test Browser');
     Event::dispatch(new Login('web', $user, false));
 
     Notification::assertSentTo($user, SuspiciousActivity::class, function ($notification) {
@@ -174,6 +191,7 @@ it('does not send notification for unusual login times when check is disabled', 
 
     config([
         'authentication-log.notifications.suspicious-activity.enabled' => true,
+        'authentication-log.notifications.new-device.enabled' => false, // Disable new device notifications
         'authentication-log.suspicious.check_unusual_times' => false,
         'authentication-log.suspicious.usual_hours' => [9, 10, 11, 12, 13, 14, 15, 16, 17],
     ]);
@@ -182,12 +200,28 @@ it('does not send notification for unusual login times when check is disabled', 
         'created_at' => now()->subMinutes(10),
     ]);
 
+    // Set request values and generate device ID
+    $sameIp = '192.168.1.1';
+    $sameUserAgent = 'Test Browser';
+    request()->server->set('REMOTE_ADDR', $sameIp);
+    request()->headers->set('User-Agent', $sameUserAgent);
+    $deviceId = \Rappasoft\LaravelAuthenticationLog\Helpers\DeviceFingerprint::generate(request());
+
+    // Create a previous successful login so device is recognized as known
+    AuthenticationLog::factory()->create([
+        'authenticatable_type' => get_class($user),
+        'authenticatable_id' => $user->id,
+        'login_successful' => true,
+        'login_at' => now()->subMinutes(30),
+        'ip_address' => $sameIp,
+        'user_agent' => $sameUserAgent,
+        'device_id' => $deviceId,
+    ]);
+
     // Set current time to 3 AM (outside usual hours)
     $originalNow = now();
     \Illuminate\Support\Carbon::setTestNow(now()->setHour(3)->setMinute(0));
 
-    request()->server->set('REMOTE_ADDR', '192.168.1.1');
-    request()->headers->set('User-Agent', 'Test Browser');
     Event::dispatch(new Login('web', $user, false));
 
     Notification::assertNothingSent();
