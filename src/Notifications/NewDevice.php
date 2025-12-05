@@ -5,7 +5,7 @@ namespace Rappasoft\LaravelAuthenticationLog\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Messages\NexmoMessage;
+use Illuminate\Notifications\Messages\VonageMessage;
 use Illuminate\Notifications\Messages\SlackMessage;
 use Illuminate\Notifications\Notification;
 use Rappasoft\LaravelAuthenticationLog\Models\AuthenticationLog;
@@ -48,7 +48,7 @@ class NewDevice extends Notification implements ShouldQueue
             ->attachment(function ($attachment) use ($notifiable) {
                 $attachment->fields([
                     __('Account') => $notifiable->email,
-                    __('Time') => $this->authenticationLog->login_at->toCookieString(),
+                    __('Time') => $this->authenticationLog->login_at->toDateTimeString(),
                     __('IP Address') => $this->authenticationLog->ip_address,
                     __('Browser') => $this->authenticationLog->user_agent,
                     __('Location') =>
@@ -60,9 +60,9 @@ class NewDevice extends Notification implements ShouldQueue
             });
     }
 
-    public function toNexmo($notifiable)
+    public function toVonage($notifiable)
     {
-        return (new NexmoMessage())
+        return (new VonageMessage())
             ->content(__('Your :app account logged in from a new device.', ['app' => config('app.name')]));
     }
 }

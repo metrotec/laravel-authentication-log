@@ -1,0 +1,123 @@
+---
+title: Suspicious Activity Detection
+weight: 5
+---
+
+The package automatically detects suspicious authentication patterns and flags them for review.
+
+## Automatic Detection
+
+Suspicious activity is automatically detected during login and failed login events. When detected, the authentication log is marked with `is_suspicious = true` and includes a reason.
+
+## Detection Rules
+
+### Multiple Failed Logins
+
+Detects when a user has multiple failed login attempts within a short time period:
+
+```php
+'suspicious' => [
+    'failed_login_threshold' => 5, // 5 failed logins in 1 hour triggers suspicious flag
+],
+```
+
+### Rapid Location Changes
+
+Detects when logins occur from multiple countries within a short time period (e.g., login from US, then UK within an hour).
+
+### Unusual Login Times
+
+Detects logins outside of normal business hours (if enabled):
+
+```php
+'suspicious' => [
+    'check_unusual_times' => true,
+    'usual_hours' => [9, 10, 11, 12, 13, 14, 15, 16, 17], // 9 AM to 5 PM
+],
+```
+
+## Manual Detection
+
+You can manually check for suspicious activity:
+
+```php
+$user = User::find(1);
+$suspiciousActivities = $user->detectSuspiciousActivity();
+
+// Returns array of suspicious activities:
+// [
+//     [
+//         'type' => 'multiple_failed_logins',
+//         'count' => 5,
+//         'message' => '5 failed login attempts in the last hour'
+//     ],
+//     [
+//         'type' => 'rapid_location_change',
+//         'countries' => ['US', 'UK'],
+//         'message' => 'Login from multiple countries within an hour'
+//     ],
+//     [
+//         'type' => 'unusual_login_time',
+//         'hour' => 3,
+//         'message' => 'Login at unusual time: 3:00'
+//     ]
+// ]
+```
+
+## Marking Logs as Suspicious
+
+Manually mark a log as suspicious:
+
+```php
+$log = AuthenticationLog::find(1);
+$log->markAsSuspicious('Manual review: Unusual pattern detected');
+```
+
+## Querying Suspicious Logs
+
+```php
+use Rappasoft\LaravelAuthenticationLog\Models\AuthenticationLog;
+
+// Get all suspicious logs
+$suspiciousLogs = AuthenticationLog::suspicious()->get();
+
+// Get suspicious logs for a user
+$userSuspiciousLogs = AuthenticationLog::forUser($user)->suspicious()->get();
+
+// Get recent suspicious activities
+$recentSuspicious = AuthenticationLog::suspicious()->recent(7)->get();
+```
+
+## Example: Suspicious Activity Alert
+
+```php
+// In your LoginController or similar
+public function login(Request $request)
+{
+    // ... authentication logic ...
+    
+    $user = auth()->user();
+    $suspicious = $user->detectSuspiciousActivity();
+    
+    if (!empty($suspicious)) {
+        // Log suspicious activity
+        \Log::warning('Suspicious activity detected', [
+            'user_id' => $user->id,
+            'activities' => $suspicious,
+        ]);
+        
+        // Optionally require additional verification
+        // return redirect()->route('verify-suspicious-login');
+    }
+    
+    return redirect()->intended();
+}
+```
+
+## Getting Suspicious Activity Count
+
+```php
+$user = User::find(1);
+$suspiciousCount = $user->getSuspiciousActivitiesCount();
+```
+

@@ -67,6 +67,14 @@ class AuthenticationLog extends DataTableComponent
             Column::make('Cleared By User')
                 ->sortable()
                 ->format(fn($value) => $value === true ? 'Yes' : 'No'),
+            Column::make('Device')
+                ->format(fn($value, $row) => $row->device_name ?? 'Unknown'),
+            Column::make('Trusted')
+                ->sortable()
+                ->format(fn($value) => $value === true ? 'Yes' : 'No'),
+            Column::make('Suspicious')
+                ->sortable()
+                ->format(fn($value) => $value === true ? 'Yes' : 'No'),
         ];
     }
 

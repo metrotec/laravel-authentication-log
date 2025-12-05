@@ -4,7 +4,7 @@
 @lang('There has been a failed login attempt to your :app account.', ['app' => config('app.name')])
 
 > **@lang('Account:')** {{ $account->email }}<br/>
-> **@lang('Time:')** {{ $time->toCookieString() }}<br/>
+> **@lang('Time:')** {{ $time->toDateTimeString() }}<br/>
 > **@lang('IP Address:')** {{ $ipAddress }}<br/>
 > **@lang('Browser:')** {{ $browser }}<br/>
 @if ($location && $location['default'] === false)
