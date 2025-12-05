@@ -9,7 +9,7 @@ You can set up your own views and paginate the logs using the user relationship 
 
 If you're using [Filament](https://filamentphp.com), here's an example table component:
 
-**Note:** This example uses the `jenssegers/agent` package for parsing user agents. It's optional, modify the table to fit your needs.
+**Note:** This example uses the package's built-in `DeviceFingerprint` helper for parsing user agents. You can customize the display format as needed.
 
 ```php
 <?php
@@ -21,7 +21,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Jenssegers\Agent\Agent;
+use Rappasoft\LaravelAuthenticationLog\Helpers\DeviceFingerprint;
 use Rappasoft\LaravelAuthenticationLog\Models\AuthenticationLog;
 
 class AuthenticationLogResource extends Resource
@@ -38,17 +38,15 @@ class AuthenticationLogResource extends Resource
                     ->label('IP Address')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('user_agent')
-                    ->label('Browser')
+                Tables\Columns\TextColumn::make('device_name')
+                    ->label('Browser/Device')
                     ->searchable()
-                    ->formatStateUsing(function ($state) {
-                        if (!$state) {
-                            return 'Unknown';
-                        }
-                        $agent = tap(new Agent, fn($agent) => $agent->setUserAgent($state));
-                        return $agent->platform() . ' - ' . $agent->browser();
-                    })
-                    ->wrap(),
+                    ->default('Unknown Device'),
+                Tables\Columns\TextColumn::make('user_agent')
+                    ->label('User Agent')
+                    ->searchable()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('location')
                     ->label('Location')
                     ->searchable(query: function (Builder $query, string $search): Builder {
@@ -162,7 +160,6 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Jenssegers\Agent\Agent;
 use Rappasoft\LaravelAuthenticationLog\Models\AuthenticationLog;
 
 class AuthenticationLogs extends Page implements HasTable
@@ -205,7 +202,6 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Jenssegers\Agent\Agent;
 use Rappasoft\LaravelAuthenticationLog\Models\AuthenticationLog;
 
 class AuthenticationLogsRelationManager extends RelationManager
@@ -222,17 +218,15 @@ class AuthenticationLogsRelationManager extends RelationManager
                     ->label('IP Address')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('user_agent')
-                    ->label('Browser')
+                Tables\Columns\TextColumn::make('device_name')
+                    ->label('Browser/Device')
                     ->searchable()
-                    ->formatStateUsing(function ($state) {
-                        if (!$state) {
-                            return 'Unknown';
-                        }
-                        $agent = tap(new Agent, fn($agent) => $agent->setUserAgent($state));
-                        return $agent->platform() . ' - ' . $agent->browser();
-                    })
-                    ->wrap(),
+                    ->default('Unknown Device'),
+                Tables\Columns\TextColumn::make('user_agent')
+                    ->label('User Agent')
+                    ->searchable()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('location')
                     ->label('Location')
                     ->searchable(query: function (Builder $query, string $search): Builder {
@@ -347,7 +341,7 @@ The authentication logs will now appear as a tab on the User resource's view/edi
 
 If you use my [Livewire Tables](https://github.com/rappasoft/laravel-livewire-tables) plugin, here is an example table:
 
-**Note:** This example uses the `jenssegers/agent` package which is included by default with Laravel Jetstream as well as `jamesmills/laravel-timezone` for displaying timezones in the users local timezone. Both are optional, modify the table to fit your needs.
+**Note:** This example uses the package's built-in `device_name` field which is automatically generated from the user agent. You can customize the display format as needed.
 
 ```php
 <?php
@@ -356,7 +350,6 @@ namespace App\Http\Livewire;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
-use Jenssegers\Agent\Agent;
 use Rappasoft\LaravelLivewireTables\DataTableComponent;
 use Rappasoft\LaravelLivewireTables\Views\Column;
 use Rappasoft\LaravelAuthenticationLog\Models\AuthenticationLog as Log;
@@ -383,12 +376,12 @@ class AuthenticationLog extends DataTableComponent
         return [
             Column::make('IP Address', 'ip_address')
                 ->searchable(),
-            Column::make('Browser', 'user_agent')
+            Column::make('Device', 'device_name')
                 ->searchable()
-                ->format(function($value) {
-                    $agent = tap(new Agent, fn($agent) => $agent->setUserAgent($value));
-                    return $agent->platform() . ' - ' . $agent->browser();
-                }),
+                ->format(fn($value, $row) => $row->device_name ?? 'Unknown Device'),
+            Column::make('User Agent', 'user_agent')
+                ->searchable()
+                ->wrap(),
             Column::make('Location')
                 ->searchable(function (Builder $query, $searchTerm) {
                     $query->orWhere('location->city', 'like', '%'.$searchTerm.'%')
