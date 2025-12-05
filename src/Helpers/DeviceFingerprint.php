@@ -35,26 +35,26 @@ class DeviceFingerprint
         // Remove version numbers (e.g., "Chrome/120.0.0.0" becomes "Chrome")
         // Pattern matches: /version, Version/version, v.version, etc.
         $normalized = preg_replace('/\/(\d+\.\d+\.\d+\.\d+|\d+\.\d+\.\d+|\d+\.\d+|\d+)/', '', $userAgent);
-        
+
         // Remove "Version X.X" patterns (common in Safari)
         $normalized = preg_replace('/Version\/[\d.]+/i', '', $normalized);
-        
+
         // Remove "vX.X.X" patterns
         $normalized = preg_replace('/\bv[\d.]+\b/i', '', $normalized);
-        
+
         // Clean up multiple spaces
         $normalized = preg_replace('/\s+/', ' ', $normalized);
-        
+
         // Remove trailing/leading spaces and separators
         $normalized = trim($normalized, ' /');
-        
+
         return $normalized;
     }
 
     public static function generateDeviceName(Request $request): string
     {
         $userAgent = $request->userAgent();
-        
+
         // Try to extract browser name
         if (preg_match('/(Chrome|Firefox|Safari|Edge|Opera|MSIE|Trident)/i', $userAgent, $matches)) {
             $browser = $matches[1];
@@ -72,4 +72,3 @@ class DeviceFingerprint
         return "{$browser} on {$os}";
     }
 }
-

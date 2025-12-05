@@ -26,7 +26,7 @@ class LoginListener
         if ($event->user instanceof Authenticatable) {
             /** @var Authenticatable&\Rappasoft\LaravelAuthenticationLog\Traits\AuthenticationLoggable $user */
             $user = $event->user;
-            
+
             if (! in_array(AuthenticationLoggable::class, class_uses_recursive(get_class($user)))) {
                 return;
             }
@@ -40,17 +40,17 @@ class LoginListener
             $userAgent = $this->request->userAgent();
             $deviceId = DeviceFingerprint::generate($this->request);
             $deviceName = DeviceFingerprint::generateDeviceName($this->request);
-            
+
             // Check if device is known (by successful login)
             $known = $user->authentications()->fromDevice($deviceId)->successful()->first();
-            
+
             // Check if there was a failed login on this device (security concern)
             $hadFailedLoginOnDevice = $user->authentications()
                 ->fromDevice($deviceId)
                 ->failed()
                 ->where('login_at', '>', now()->subHours(24)) // Within last 24 hours
                 ->exists();
-            
+
             $newUserThreshold = config('authentication-log.notifications.new-device.new_user_threshold_minutes', 1);
             $newUser = Carbon::parse($user->{$user->getCreatedAtColumn()})->diffInMinutes(Carbon::now()) < $newUserThreshold;
 
@@ -65,7 +65,7 @@ class LoginListener
                     ->whereNull('logout_at')
                     ->where('login_at', '>', now()->subMinutes($restorationWindow))
                     ->first();
-                
+
                 if ($existingActiveSession) {
                     // This is a session restoration, update last_activity_at instead of creating new entry
                     $existingActiveSession->update(['last_activity_at' => now()]);
@@ -80,7 +80,7 @@ class LoginListener
 
             // Detect suspicious activity
             $suspiciousActivities = $user->detectSuspiciousActivity();
-            $isSuspicious = !empty($suspiciousActivities);
+            $isSuspicious = ! empty($suspiciousActivities);
             $suspiciousReason = $isSuspicious ? json_encode($suspiciousActivities) : null;
 
             $log = $user->authentications()->create([
@@ -105,7 +105,7 @@ class LoginListener
             // Send new device notification with rate limiting
             // Send if: device is unknown OR there was a failed login on this device (security concern)
             $shouldNotify = (! $known || $hadFailedLoginOnDevice) && ! $newUser;
-            
+
             if ($shouldNotify && config('authentication-log.notifications.new-device.enabled')) {
                 $rateLimitKey = "new_device:{$user->id}";
                 $maxAttempts = config('authentication-log.notifications.new-device.rate_limit', 3);
@@ -120,11 +120,11 @@ class LoginListener
 
             // Send webhooks
             WebhookService::send('login', $log, $user);
-            
+
             if ($isSuspicious) {
                 WebhookService::send('suspicious', $log, $user);
             }
-            
+
             if ((! $known || $hadFailedLoginOnDevice) && ! $newUser) {
                 WebhookService::send('new_device', $log, $user);
             }

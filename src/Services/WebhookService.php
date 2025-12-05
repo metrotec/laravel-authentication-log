@@ -37,11 +37,11 @@ class WebhookService
         ];
 
         foreach ($webhooks as $webhook) {
-            if (!isset($webhook['url']) || !isset($webhook['events'])) {
+            if (! isset($webhook['url']) || ! isset($webhook['events'])) {
                 continue;
             }
 
-            if (!in_array($event, $webhook['events']) && !in_array('*', $webhook['events'])) {
+            if (! in_array($event, $webhook['events']) && ! in_array('*', $webhook['events'])) {
                 continue;
             }
 
@@ -70,4 +70,3 @@ class WebhookService
         }
     }
 }
-

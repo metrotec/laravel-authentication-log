@@ -24,13 +24,13 @@ it('has correct fillable attributes', function () {
         'is_suspicious',
         'suspicious_reason',
     ];
-    
+
     expect((new AuthenticationLog())->getFillable())->toBe($fillable);
 });
 
 it('has correct casts', function () {
     $log = new AuthenticationLog();
-    
+
     expect($log->getCasts())->toHaveKey('cleared_by_user', 'boolean');
     expect($log->getCasts())->toHaveKey('is_trusted', 'boolean');
     expect($log->getCasts())->toHaveKey('is_suspicious', 'boolean');
@@ -43,7 +43,7 @@ it('has correct casts', function () {
 
 it('has default attributes', function () {
     $log = new AuthenticationLog();
-    
+
     expect($log->login_successful)->toBeFalse();
     expect($log->cleared_by_user)->toBeFalse();
     expect($log->is_trusted)->toBeFalse();
@@ -56,22 +56,21 @@ it('can have authenticatable relationship', function () {
         'authenticatable_type' => get_class($user),
         'authenticatable_id' => $user->id,
     ]);
-    
+
     expect($log->authenticatable)->toBeInstanceOf(TestUser::class);
     expect($log->authenticatable->id)->toBe($user->id);
 });
 
 it('can use custom table name', function () {
     config(['authentication-log.table_name' => 'custom_auth_log']);
-    
+
     $log = new AuthenticationLog();
     expect($log->getTable())->toBe('custom_auth_log');
 });
 
 it('can use custom database connection', function () {
     config(['authentication-log.db_connection' => 'custom']);
-    
+
     $log = new AuthenticationLog();
     expect($log->getConnectionName())->toBe('custom');
 });
-

@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class AuthenticationLog extends Model
 {
     use HasFactory;
-    
+
     public $timestamps = false;
 
     protected $table = 'authentication_log';
