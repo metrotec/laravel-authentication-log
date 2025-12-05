@@ -83,6 +83,7 @@ it('sends notification for rapid location changes during login', function () {
 
     config([
         'authentication-log.notifications.suspicious-activity.enabled' => true,
+        'authentication-log.notifications.new-device.enabled' => false, // Disable new device notifications
         'authentication-log.notifications.new-device.location' => false, // Disable geoip to manually set location
     ]);
 
@@ -90,12 +91,22 @@ it('sends notification for rapid location changes during login', function () {
         'created_at' => now()->subMinutes(10),
     ]);
 
-    // Create first login from United States
+    // Set request values and generate device ID
+    $sameIp = '192.168.1.1';
+    $sameUserAgent = 'Test Browser';
+    request()->server->set('REMOTE_ADDR', $sameIp);
+    request()->headers->set('User-Agent', $sameUserAgent);
+    $deviceId = \Rappasoft\LaravelAuthenticationLog\Helpers\DeviceFingerprint::generate(request());
+
+    // Create first login from United States with matching device_id
     AuthenticationLog::factory()->create([
         'authenticatable_type' => get_class($user),
         'authenticatable_id' => $user->id,
         'login_successful' => true,
         'login_at' => now()->subMinutes(30),
+        'ip_address' => $sameIp,
+        'user_agent' => $sameUserAgent,
+        'device_id' => $deviceId,
         'location' => [
             'default' => false,
             'country' => 'United States',
@@ -103,12 +114,15 @@ it('sends notification for rapid location changes during login', function () {
         ],
     ]);
 
-    // Create second login from United Kingdom (different country)
+    // Create second login from United Kingdom (different country) with matching device_id
     AuthenticationLog::factory()->create([
         'authenticatable_type' => get_class($user),
         'authenticatable_id' => $user->id,
         'login_successful' => true,
         'login_at' => now()->subMinutes(20),
+        'ip_address' => $sameIp,
+        'user_agent' => $sameUserAgent,
+        'device_id' => $deviceId,
         'location' => [
             'default' => false,
             'country' => 'United Kingdom',
@@ -117,8 +131,6 @@ it('sends notification for rapid location changes during login', function () {
     ]);
 
     // Trigger login event which will detect suspicious activity
-    request()->server->set('REMOTE_ADDR', '192.168.1.1');
-    request()->headers->set('User-Agent', 'Test Browser');
     Event::dispatch(new Login('web', $user, false));
 
     Notification::assertSentTo($user, SuspiciousActivity::class, function ($notification) {
@@ -322,8 +334,15 @@ it('does not send notification for rapid location change when locations are same
     // Use same device fingerprint for all logins
     $sameIp = '192.168.1.1';
     $sameUserAgent = 'Test Browser';
+    
+    // Set request values first
+    request()->server->set('REMOTE_ADDR', $sameIp);
+    request()->headers->set('User-Agent', $sameUserAgent);
+    
+    // Generate device ID that matches what DeviceFingerprint would generate
+    $deviceId = \Rappasoft\LaravelAuthenticationLog\Helpers\DeviceFingerprint::generate(request());
 
-    // Create first login from New York
+    // Create first login from New York with matching device_id
     AuthenticationLog::factory()->create([
         'authenticatable_type' => get_class($user),
         'authenticatable_id' => $user->id,
@@ -331,6 +350,7 @@ it('does not send notification for rapid location change when locations are same
         'login_at' => now()->subMinutes(30),
         'ip_address' => $sameIp,
         'user_agent' => $sameUserAgent,
+        'device_id' => $deviceId,
         'location' => [
             'default' => false,
             'country' => 'United States',
@@ -338,7 +358,7 @@ it('does not send notification for rapid location change when locations are same
         ],
     ]);
 
-    // Create second login from Los Angeles (same country)
+    // Create second login from Los Angeles (same country) with matching device_id
     AuthenticationLog::factory()->create([
         'authenticatable_type' => get_class($user),
         'authenticatable_id' => $user->id,
@@ -346,6 +366,7 @@ it('does not send notification for rapid location change when locations are same
         'login_at' => now()->subMinutes(20),
         'ip_address' => $sameIp,
         'user_agent' => $sameUserAgent,
+        'device_id' => $deviceId,
         'location' => [
             'default' => false,
             'country' => 'United States',
@@ -354,8 +375,6 @@ it('does not send notification for rapid location change when locations are same
     ]);
 
     // Trigger login event with same device fingerprint
-    request()->server->set('REMOTE_ADDR', $sameIp);
-    request()->headers->set('User-Agent', $sameUserAgent);
     Event::dispatch(new Login('web', $user, false));
 
     Notification::assertNothingSent();
