@@ -368,11 +368,11 @@ it('does not send notification for rapid location change when locations are same
     // Use same device fingerprint for all logins
     $sameIp = '192.168.1.1';
     $sameUserAgent = 'Test Browser';
-    
+
     // Set request values first
     request()->server->set('REMOTE_ADDR', $sameIp);
     request()->headers->set('User-Agent', $sameUserAgent);
-    
+
     // Generate device ID that matches what DeviceFingerprint would generate
     $deviceId = \Rappasoft\LaravelAuthenticationLog\Helpers\DeviceFingerprint::generate(request());
 
