@@ -1,10 +1,10 @@
 # Upgrade Guide
 
-## Upgrading from v3.x to v4.x
+## Upgrading from v5.x (or earlier) to v6.x
 
-Version 4.x introduces new features that require additional database columns. This guide will help you upgrade your existing installation.
+Version 6.x introduces new features that require additional database columns. This guide will help you upgrade your existing installation.
 
-### What's New in v4.x
+### What's New in v6.x
 
 - Device fingerprinting
 - Suspicious activity detection
@@ -48,10 +48,11 @@ The following columns will be added to your `authentication_log` table:
 - `is_suspicious` (boolean, default: false) - Suspicious activity flag
 - `suspicious_reason` (string, nullable) - Reason for suspicious flag
 
-### Backward Compatibility
+### Requirements
 
-- **Laravel 10.x**: The package will continue to work with basic logging functionality. New features are disabled automatically.
-- **Laravel 11.x and 12.x**: All new features are available.
+**Version 6.x requires Laravel 11.x or 12.x.**
+
+If you're still using Laravel 10.x, please continue using version 5.x of this package.
 
 ### Rollback
 

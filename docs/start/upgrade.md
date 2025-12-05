@@ -3,11 +3,11 @@ title: Upgrade Guide
 weight: 3
 ---
 
-## Upgrading from v3.x to v4.x
+## Upgrading from v5.x (or earlier) to v6.x
 
-Version 4.x introduces new features that require additional database columns. This guide will help you upgrade your existing installation safely.
+Version 6.x introduces new features that require additional database columns. This guide will help you upgrade your existing installation safely.
 
-## What's New in v4.x
+## What's New in v6.x
 
 - 🔐 **Device Fingerprinting** - Reliable device identification using SHA-256 hashing
 - 🚨 **Suspicious Activity Detection** - Automatically detects multiple failed logins, rapid location changes, and unusual login times
@@ -63,9 +63,9 @@ The following columns will be added to your `authentication_log` table:
 
 ## Requirements
 
-**Version 4.x requires Laravel 11.x or 12.x.**
+**Version 6.x requires Laravel 11.x or 12.x.**
 
-If you're still using Laravel 10.x, please continue using version 3.x of this package. Version 4.x is a major release that drops support for Laravel 10.x to simplify the codebase and take advantage of Laravel 11+ features.
+If you're still using Laravel 10.x, please continue using version 5.x of this package. Version 6.x is a major release that drops support for Laravel 10.x to simplify the codebase and take advantage of Laravel 11+ features.
 
 ## What Happens to Existing Data?
 
