@@ -9,6 +9,41 @@ The package automatically detects suspicious authentication patterns and flags t
 
 Suspicious activity is automatically detected during login and failed login events. When detected, the authentication log is marked with `is_suspicious = true` and includes a reason.
 
+## Notifications
+
+You can enable email, Slack, or SMS notifications when suspicious activity is detected. **This feature is disabled by default.**
+
+### Enabling Suspicious Activity Notifications
+
+Add the following to your `.env` file:
+
+```env
+SUSPICIOUS_ACTIVITY_NOTIFICATION=true
+SUSPICIOUS_ACTIVITY_NOTIFICATION_RATE_LIMIT=3
+SUSPICIOUS_ACTIVITY_NOTIFICATION_RATE_LIMIT_DECAY=60
+```
+
+Or configure it directly in `config/authentication-log.php`:
+
+```php
+'notifications' => [
+    'suspicious-activity' => [
+        'enabled' => env('SUSPICIOUS_ACTIVITY_NOTIFICATION', false),
+        'location' => function_exists('geoip'),
+        'template' => \Rappasoft\LaravelAuthenticationLog\Notifications\SuspiciousActivity::class,
+        'rate_limit' => env('SUSPICIOUS_ACTIVITY_NOTIFICATION_RATE_LIMIT', 3),
+        'rate_limit_decay' => env('SUSPICIOUS_ACTIVITY_NOTIFICATION_RATE_LIMIT_DECAY', 60),
+    ],
+],
+```
+
+When enabled, users will receive notifications for all types of suspicious activity:
+- Multiple failed login attempts
+- Rapid location changes
+- Unusual login times (if enabled)
+
+The notification includes details about the suspicious activity, login time, IP address, browser, and location (if available).
+
 ## Detection Rules
 
 ### Multiple Failed Logins

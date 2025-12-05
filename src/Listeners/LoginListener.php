@@ -9,6 +9,7 @@ use Illuminate\Support\Carbon;
 use Rappasoft\LaravelAuthenticationLog\Helpers\DeviceFingerprint;
 use Rappasoft\LaravelAuthenticationLog\Helpers\NotificationRateLimiter;
 use Rappasoft\LaravelAuthenticationLog\Notifications\NewDevice;
+use Rappasoft\LaravelAuthenticationLog\Notifications\SuspiciousActivity;
 use Rappasoft\LaravelAuthenticationLog\Services\WebhookService;
 use Rappasoft\LaravelAuthenticationLog\Traits\AuthenticationLoggable;
 
@@ -115,6 +116,19 @@ class LoginListener
                     $newDeviceClass = config('authentication-log.notifications.new-device.template') ?? NewDevice::class;
                     /** @var Authenticatable&\Rappasoft\LaravelAuthenticationLog\Traits\AuthenticationLoggable $user */
                     $user->notify(new $newDeviceClass($log));
+                }
+            }
+
+            // Send suspicious activity notification with rate limiting
+            if ($isSuspicious && config('authentication-log.notifications.suspicious-activity.enabled')) {
+                $rateLimitKey = "suspicious_activity:{$user->id}";
+                $maxAttempts = config('authentication-log.notifications.suspicious-activity.rate_limit', 3);
+                $decayMinutes = config('authentication-log.notifications.suspicious-activity.rate_limit_decay', 60);
+
+                if (NotificationRateLimiter::shouldSend($rateLimitKey, $maxAttempts, $decayMinutes)) {
+                    $suspiciousActivityClass = config('authentication-log.notifications.suspicious-activity.template') ?? SuspiciousActivity::class;
+                    /** @var Authenticatable&\Rappasoft\LaravelAuthenticationLog\Traits\AuthenticationLoggable $user */
+                    $user->notify(new $suspiciousActivityClass($log, $suspiciousActivities));
                 }
             }
 

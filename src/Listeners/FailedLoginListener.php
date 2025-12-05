@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Rappasoft\LaravelAuthenticationLog\Helpers\DeviceFingerprint;
 use Rappasoft\LaravelAuthenticationLog\Helpers\NotificationRateLimiter;
 use Rappasoft\LaravelAuthenticationLog\Notifications\FailedLogin;
+use Rappasoft\LaravelAuthenticationLog\Notifications\SuspiciousActivity;
 use Rappasoft\LaravelAuthenticationLog\Services\WebhookService;
 use Rappasoft\LaravelAuthenticationLog\Traits\AuthenticationLoggable;
 
@@ -55,7 +56,18 @@ class FailedLoginListener
                 ->where('login_at', '>=', now()->subHour())
                 ->count();
 
+            $isSuspicious = false;
+            $suspiciousActivities = [];
+
             if ($recentFailed >= config('authentication-log.suspicious.failed_login_threshold', 5)) {
+                $isSuspicious = true;
+                $suspiciousActivities = [
+                    [
+                        'type' => 'multiple_failed_logins',
+                        'count' => $recentFailed,
+                        'message' => "{$recentFailed} failed login attempts in the last hour",
+                    ],
+                ];
                 $log->markAsSuspicious("Multiple failed logins: {$recentFailed} attempts in the last hour");
             }
 
@@ -68,6 +80,18 @@ class FailedLoginListener
                 if (NotificationRateLimiter::shouldSend($rateLimitKey, $maxAttempts, $decayMinutes)) {
                     $failedLoginClass = config('authentication-log.notifications.failed-login.template') ?? FailedLogin::class;
                     $user->notify(new $failedLoginClass($log));
+                }
+            }
+
+            // Send suspicious activity notification with rate limiting
+            if ($isSuspicious && config('authentication-log.notifications.suspicious-activity.enabled')) {
+                $rateLimitKey = "suspicious_activity:{$user->id}";
+                $maxAttempts = config('authentication-log.notifications.suspicious-activity.rate_limit', 3);
+                $decayMinutes = config('authentication-log.notifications.suspicious-activity.rate_limit_decay', 60);
+
+                if (NotificationRateLimiter::shouldSend($rateLimitKey, $maxAttempts, $decayMinutes)) {
+                    $suspiciousActivityClass = config('authentication-log.notifications.suspicious-activity.template') ?? SuspiciousActivity::class;
+                    $user->notify(new $suspiciousActivityClass($log, $suspiciousActivities));
                 }
             }
 

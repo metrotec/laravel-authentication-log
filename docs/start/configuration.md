@@ -104,6 +104,20 @@ return [
             'rate_limit' => env('FAILED_LOGIN_NOTIFICATION_RATE_LIMIT', 5),
             'rate_limit_decay' => env('FAILED_LOGIN_NOTIFICATION_RATE_LIMIT_DECAY', 60), // minutes
         ],
+        'suspicious-activity' => [
+            // Send the SuspiciousActivity notification (disabled by default)
+            'enabled' => env('SUSPICIOUS_ACTIVITY_NOTIFICATION', false),
+
+            // Use torann/geoip to attempt to get a location
+            'location' => true,
+
+            // The Notification class to send
+            'template' => \Rappasoft\LaravelAuthenticationLog\Notifications\SuspiciousActivity::class,
+
+            // Rate limiting for notifications (max attempts per time period)
+            'rate_limit' => env('SUSPICIOUS_ACTIVITY_NOTIFICATION_RATE_LIMIT', 3),
+            'rate_limit_decay' => env('SUSPICIOUS_ACTIVITY_NOTIFICATION_RATE_LIMIT_DECAY', 60), // minutes
+        ],
     ],
 
     // Suspicious activity detection
@@ -193,6 +207,29 @@ Configure suspicious activity detection thresholds:
     'usual_hours' => [9, 10, 11, 12, 13, 14, 15, 16, 17], // Hours considered "usual"
 ],
 ```
+
+### Suspicious Activity Notifications
+
+You can enable notifications when suspicious activity is detected. **This is disabled by default.**
+
+```php
+'notifications' => [
+    'suspicious-activity' => [
+        'enabled' => env('SUSPICIOUS_ACTIVITY_NOTIFICATION', false),
+        'location' => function_exists('geoip'),
+        'template' => \Rappasoft\LaravelAuthenticationLog\Notifications\SuspiciousActivity::class,
+        'rate_limit' => env('SUSPICIOUS_ACTIVITY_NOTIFICATION_RATE_LIMIT', 3),
+        'rate_limit_decay' => env('SUSPICIOUS_ACTIVITY_NOTIFICATION_RATE_LIMIT_DECAY', 60),
+    ],
+],
+```
+
+When enabled, users will receive notifications for:
+- Multiple failed login attempts
+- Rapid location changes
+- Unusual login times (if enabled)
+
+See the [Suspicious Activity documentation](/docs/laravel-authentication-log/usage/suspicious-activity) for more details.
 
 ## Webhook Configuration
 

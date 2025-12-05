@@ -48,6 +48,48 @@ Failed login notifications also support rate limiting:
 ],
 ```
 
+## Suspicious Activity Notifications
+
+**Disabled by default**, suspicious activity notifications use the `\Rappasoft\LaravelAuthenticationLog\Notifications\SuspiciousActivity` class which can be overridden in the config file.
+
+When enabled, users will receive notifications when suspicious activity is detected, including:
+- Multiple failed login attempts
+- Rapid location changes
+- Unusual login times (if enabled)
+
+### Enabling Suspicious Activity Notifications
+
+Add to your `.env` file:
+
+```env
+SUSPICIOUS_ACTIVITY_NOTIFICATION=true
+```
+
+Or configure in `config/authentication-log.php`:
+
+```php
+'suspicious-activity' => [
+    'enabled' => env('SUSPICIOUS_ACTIVITY_NOTIFICATION', false),
+    'location' => function_exists('geoip'),
+    'template' => \Rappasoft\LaravelAuthenticationLog\Notifications\SuspiciousActivity::class,
+    'rate_limit' => env('SUSPICIOUS_ACTIVITY_NOTIFICATION_RATE_LIMIT', 3),
+    'rate_limit_decay' => env('SUSPICIOUS_ACTIVITY_NOTIFICATION_RATE_LIMIT_DECAY', 60),
+],
+```
+
+### Rate Limiting
+
+Suspicious activity notifications support rate limiting to prevent notification spam:
+
+```php
+'suspicious-activity' => [
+    'rate_limit' => 3, // Maximum 3 notifications per time period
+    'rate_limit_decay' => 60, // Time period in minutes
+],
+```
+
+This means a user will receive a maximum of 3 suspicious activity notifications per hour, even if multiple suspicious activities are detected.
+
 ## Location
 
 If the `torann/geoip` package is installed, it will attempt to include location information to the notifications by default.
@@ -67,6 +109,9 @@ You can override the notification classes in the config file:
     ],
     'failed-login' => [
         'template' => \App\Notifications\CustomFailedLogin::class,
+    ],
+    'suspicious-activity' => [
+        'template' => \App\Notifications\CustomSuspiciousActivity::class,
     ],
 ],
 ```

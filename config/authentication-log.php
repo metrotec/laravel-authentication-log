@@ -58,6 +58,21 @@ return [
             'rate_limit' => env('FAILED_LOGIN_NOTIFICATION_RATE_LIMIT', 5),
             'rate_limit_decay' => env('FAILED_LOGIN_NOTIFICATION_RATE_LIMIT_DECAY', 60),
         ],
+        'suspicious-activity' => [
+            // Send the SuspiciousActivity notification
+            'enabled' => env('SUSPICIOUS_ACTIVITY_NOTIFICATION', false),
+
+            // Use torann/geoip to attempt to get a location
+            // Defaults to false if geoip is not installed
+            'location' => function_exists('geoip'),
+
+            // The Notification class to send
+            'template' => \Rappasoft\LaravelAuthenticationLog\Notifications\SuspiciousActivity::class,
+
+            // Rate limiting for notifications
+            'rate_limit' => env('SUSPICIOUS_ACTIVITY_NOTIFICATION_RATE_LIMIT', 3),
+            'rate_limit_decay' => env('SUSPICIOUS_ACTIVITY_NOTIFICATION_RATE_LIMIT_DECAY', 60),
+        ],
     ],
 
     // Suspicious activity detection
