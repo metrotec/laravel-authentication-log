@@ -303,8 +303,8 @@ class AuthenticationLogsRelationManager extends RelationManager
                         ->whereNull('logout_at')
                     ),
             ])
-            ->defaultSort('login_at', 'desc')
-            ->poll('30s'); // Optional: auto-refresh every 30 seconds
+            ->defaultSort('login_at', 'desc');
+            // ->poll('30s'); // Optional: auto-refresh every 30 seconds
     }
 }
 ```
