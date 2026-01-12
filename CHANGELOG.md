@@ -2,6 +2,52 @@
 
 All notable changes to `Laravel Authentication Log` will be documented in this file.
 
+### 6.0.0 - 2025-01-27
+
+#### Added
+- Suspicious activity detection with configurable thresholds
+- Comprehensive session management (view, revoke sessions)
+- Device fingerprinting with browser version normalization
+- Device trust management (trust/untrust devices)
+- Query scopes for filtering authentication logs (successful, failed, suspicious, trusted, active, etc.)
+- Statistics and insights methods (getLoginStats, getTotalLogins, etc.)
+- Rate limiting for notifications (prevent spam)
+- Middleware for device trust (RequireTrustedDevice)
+- Export functionality (CSV/JSON export command)
+- Webhook support for authentication events
+- Configurable new user threshold (prevent false positives)
+- Session restoration prevention (fixes duplicate log entries from page refreshes)
+- Arabic translation (ar.json)
+- Enhanced notifications with Vonage support
+
+#### Fixed
+- Issue #40: Browser version updates no longer trigger false "new device" notifications
+- Issue #13: Session restorations no longer create duplicate log entries
+
+#### Changed
+- Dropped Laravel 10.x support (now only supports Laravel 11.x and 12.x)
+- PHP 8.1+ required
+- Config defaults now check for geoip function existence
+- Improved device fingerprinting to normalize user agent strings
+
+#### Implemented Pull Requests
+- PR #15: Notification after failed login on new device
+- PR #52: Optimize Other Devices Logout Listener
+- PR #57: Use null safe/chaining operator
+- PR #80: Added PHPDocs for IDE autocompletion
+- PR #85: Configurable new user threshold
+- PR #92: Configurable listeners
+- PR #94: Check trait implementation
+- PR #100: Laravel 11 support
+- PR #115: Check if geoip is installed
+- PR #120: Laravel 12 support & Arabic translation
+- PR #125: Test configuration updates
+- PR #127: Spanish translation & blade fixes
+
+### 5.0.0 - 2024-XX-XX
+
+- Laravel 12 Support
+
 ### 4.0.0 - 2024-03-28
 
 - Laravel 11 Support (https://github.com/rappasoft/laravel-authentication-log/pull/100)
