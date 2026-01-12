@@ -15,7 +15,7 @@ class PurgeAuthenticationLogCommand extends Command
     {
         $this->comment('Clearing authentication log...');
 
-        $deleted = AuthenticationLog::where('login_at', '<', now()->subDays(config('authentication-log.purge'))->format('Y-m-d H:i:s'))->delete();
+        $deleted = AuthenticationLog::where('login_at', '<', now()->subDays(config('authentication-log.purge')))->delete();
 
         $this->info($deleted . ' authentication logs cleared.');
     }
