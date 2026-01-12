@@ -2,7 +2,6 @@
 
 namespace Rappasoft\LaravelAuthenticationLog\Listeners;
 
-use Illuminate\Auth\Events\Login;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -25,7 +24,10 @@ class LoginListener
         $this->request = $request;
     }
 
-    public function handle(Login $event): void
+    /**
+     * @param  \Illuminate\Auth\Events\Login|object  $event
+     */
+    public function handle(object $event): void
     {
         if ($event->user instanceof Authenticatable) {
             /** @var Authenticatable&\Rappasoft\LaravelAuthenticationLog\Traits\AuthenticationLoggable $user */
