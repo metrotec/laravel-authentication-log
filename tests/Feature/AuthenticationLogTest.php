@@ -6,6 +6,7 @@ use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Events\OtherDeviceLogout;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
+use Rappasoft\LaravelAuthenticationLog\Helpers\DeviceFingerprint;
 use Rappasoft\LaravelAuthenticationLog\Models\AuthenticationLog;
 use Rappasoft\LaravelAuthenticationLog\Notifications\FailedLogin;
 use Rappasoft\LaravelAuthenticationLog\Notifications\NewDevice;
@@ -57,6 +58,7 @@ it('logs logout', function () {
         'authenticatable_id' => $user->id,
         'ip_address' => $ip,
         'user_agent' => $userAgent,
+        'device_id' => DeviceFingerprint::generate(request()),
         'login_at' => now()->subHour(),
         'login_successful' => true,
     ]);
@@ -173,6 +175,7 @@ it('handles other device logout', function () {
         'authenticatable_id' => $user->id,
         'ip_address' => '192.168.1.2',
         'user_agent' => 'Current Browser',
+        'device_id' => DeviceFingerprint::generate(request()),
         'login_at' => now()->subHour(),
         'login_successful' => true,
         'logout_at' => null,
