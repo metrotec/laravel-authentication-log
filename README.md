@@ -5,7 +5,7 @@
 
 Laravel Authentication Log is a comprehensive package which tracks your user's authentication information such as login/logout time, IP, Browser, Location, Device Fingerprint, etc. It sends out notifications via mail, slack, or SMS for new devices and failed logins, detects suspicious activity, provides session management, prevents duplicate log entries from session restorations, and much more.
 
-**Version 6.0.0** introduces major enhancements including session restoration prevention, improved device fingerprinting, enhanced statistics, and more. See the [Release Notes](RELEASE_NOTES.md) for complete details.
+**Version 6.0.0** introduces major enhancements including session restoration prevention, improved device fingerprinting, enhanced statistics, and more. **Version 6.1.0** adds Laravel 13.x support and compatibility with immutable date casting. See the [Release Notes](RELEASE_NOTES.md) for complete details.
 
 ## Features
 
@@ -41,8 +41,9 @@ See the [documentation](https://rappasoft.com/docs/laravel-authentication-log) f
  10.x     | 3.x               | Basic logging only
  11.x     | 5.x, 6.x          | All features (device fingerprinting, suspicious activity, webhooks, session management, etc.)
  12.x     | 5.x, 6.x          | All features (device fingerprinting, suspicious activity, webhooks, session management, etc.)
+ 13.x     | 6.1+              | All features (device fingerprinting, suspicious activity, webhooks, session management, etc.)
 
-**Note:** Version 6.x requires Laravel 11.x or 12.x and PHP 8.1+. Version 5.x also supports Laravel 11.x and 12.x. For Laravel 10.x support, please use version 3.x.
+**Note:** Version 6.1+ requires Laravel 11.x, 12.x, or 13.x and PHP 8.2+. Version 5.x also supports Laravel 11.x and 12.x. For Laravel 10.x support, please use version 3.x.
 
 ## Installation
 
@@ -86,8 +87,8 @@ php artisan migrate
 **Important:** If upgrading from v3.x or earlier, the upgrade migration will safely add the new columns (`device_id`, `device_name`, `is_trusted`, `last_activity_at`, `is_suspicious`, `suspicious_reason`) to your existing `authentication_log` table without affecting existing data.
 
 **Breaking Changes in v6.0.0:**
-- Laravel 10.x support has been dropped (only Laravel 11.x and 12.x are supported)
-- PHP 8.1+ is now required
+- Laravel 10.x support was dropped (v6.1+ supports Laravel 11.x, 12.x, and 13.x)
+- PHP 8.1+ was required (PHP 8.2+ as of v6.1.0)
 - See the [Upgrade Guide](docs/start/upgrade.md) for detailed migration instructions
 
 ### 3. Configure (Optional)
